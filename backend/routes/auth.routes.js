@@ -1,11 +1,11 @@
 import express from "express";
-import { signup,login,logout } from "../controllers/auth.controllers.js";
+import { customersignup, login,logout, sellersignup } from "../controllers/auth.controllers.js";
 
 
 const router=express.Router();
 
-router.post("/signup",signup);
-
+router.post("/seller/signup",sellersignup);
+router.post("/customer/signup",customersignup);
 
 router.post("/seller/login",login);
 router.post("/customer/login",login);

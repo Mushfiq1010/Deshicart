@@ -1,29 +1,33 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Signup from "./components/Signup";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import SellerSignup from "./components/sellerSignup";
+import CustomerSignup from "./components/customerSignup";
 import CustomerLogin from "./components/CustomerLogin";
 import SellerLogin from "./components/SellerLogin";
+import HomePage from "./components/HomePage";
+import AddProduct from "./components/SellerProducts/AddProduct";
+import ProductList from "./components/SellerProducts/ProductList";
+import EditProduct from "./components/SellerProducts/EditProduct";
 
 function App() {
   return (
     <Router>
-      <nav style={{ padding: "1rem", backgroundColor: "#f0f0f0" }}>
-        <Link to="/signup" style={{ marginRight: "1rem" }}>Signup</Link>
-        <Link to="/login/customer" style={{ marginRight: "1rem" }}>Customer Login</Link>
-        <Link to="/login/seller">Seller Login</Link>
-      </nav>
+
 
       <Routes>
-        <Route path="/" element={<Signup />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/signup/seller" element={<SellerSignup />} />
+        <Route path="/signup/customer" element={<CustomerSignup />} />
         <Route path="/login/customer" element={<CustomerLogin />} />
         <Route path="/login/seller" element={<SellerLogin />} />
+        <Route path="/seller/products" element={<ProductList />} />
+        <Route path="/seller/products/new" element={<AddProduct />} />
+        <Route path="/seller/products/edit/:id" element={<EditProduct />} />
       </Routes>
     </Router>
   );
 }
 
 export default App;
-
 
 
 
