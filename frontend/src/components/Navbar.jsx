@@ -34,7 +34,7 @@ const Navbar = () => {
           style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
         >
           <img
-            src={profile.PROFILEIMAGE || "https://via.placeholder.com/40"}
+            src={profile.PROFILEIMAGE || "/images/placeholder.jpg"}
             alt="Profile"
             width="40"
             height="40"

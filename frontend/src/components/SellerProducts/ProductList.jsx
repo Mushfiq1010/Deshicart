@@ -46,7 +46,7 @@ function ProductList() {
     <li key={product.productId}>
       <h3>{product.name}</h3>
       <img
-        src={product.firstImageUrl || "https://via.placeholder.com/150"}
+        src={product.firstImageUrl || "/images/photo.png"}
         alt={product.name}
         width="150"
         height="150"

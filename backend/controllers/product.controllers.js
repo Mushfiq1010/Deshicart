@@ -6,9 +6,21 @@ export const getProducts = async (req, res) => {
   let conn;
   try {
     conn = await connectDB();
-    const result = await conn.execute(`SELECT * FROM Product`, [], {
-      outFormat: oracledb.OUT_FORMAT_OBJECT
-    });
+const result = await conn.execute(
+  `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
+          i.IMAGEURL
+   FROM PRODUCT p
+   LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
+     AND pi.IMAGEID = (
+          SELECT MIN(IMAGEID)
+          FROM PRODUCTIMAGE
+          WHERE PRODUCTID = p.PRODUCTID
+     )
+   LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID`,
+  [],
+  { outFormat: oracledb.OUT_FORMAT_OBJECT }
+);
+
 
     const products = result.rows.map(row => ({
       productId: row.PRODUCTID,
@@ -17,17 +29,19 @@ export const getProducts = async (req, res) => {
       price: row.PRICE,
       quantity: row.QUANTITY,
       categoryId: row.CATEGORYID,
-      sellerId: row.SELLERID
+      sellerId: row.SELLERID,
+      firstImageUrl: row.IMAGEURL
     }));
 
     res.json(products);
   } catch (err) {
-    console.error(err);
+    console.error("Error in getProducts:", err);
     res.status(500).send("Database error");
   } finally {
     if (conn) await conn.close();
   }
 };
+
 
 
 export const getSellerProducts = async (req, res) => {
@@ -37,21 +51,21 @@ export const getSellerProducts = async (req, res) => {
    console.log(req.user);
    
     conn = await connectDB();
-    const result = await conn.execute(
-      `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
-              i.IMAGEURL
-       FROM PRODUCT p
-       LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
-       LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
-       WHERE p.SELLERID = :sellerId
-       AND pi.IMAGEID = (
-            SELECT MIN(IMAGEID)
-            FROM PRODUCTIMAGE
-            WHERE PRODUCTID = p.PRODUCTID
-       )`,
-      [sellerId],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
+const result = await conn.execute(
+  `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
+          i.IMAGEURL
+   FROM PRODUCT p
+   LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
+     AND pi.IMAGEID = (
+          SELECT MIN(IMAGEID)
+          FROM PRODUCTIMAGE
+          WHERE PRODUCTID = p.PRODUCTID
+     )
+   LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
+   WHERE p.SELLERID = :sellerId`,
+  [sellerId],
+  { outFormat: oracledb.OUT_FORMAT_OBJECT }
+);
 
     const products = result.rows.map(row => ({
       productId: row.PRODUCTID,
