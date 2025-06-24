@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../Api"; 
+import Navbar from "../Navbar";
 
 function ProductList() {
   const [products, setProducts] = useState([]);
@@ -37,6 +38,7 @@ function ProductList() {
 
   return (
     <div>
+      <Navbar />
       <h2>My Products</h2>
       <button onClick={() => navigate("/seller/products/new")}>Add New Product</button>
 <ul>
