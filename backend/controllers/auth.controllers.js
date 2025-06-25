@@ -186,7 +186,6 @@ export const sellerLogin = async (req, res) => {
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
-    // Check if user is a seller
     const sellerCheck = await conn.execute(
       `SELECT * FROM SELLER WHERE SELLERID = :id`,
       [user["USERID"]],

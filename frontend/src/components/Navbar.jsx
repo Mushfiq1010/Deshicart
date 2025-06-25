@@ -18,29 +18,45 @@ const Navbar = () => {
     loadProfile();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await API.post("/auth/logout");
+      alert("Logged out successfully");
+      navigate("/login/seller"); 
+    } catch (err) {
+      alert("Logout failed");
+    }
+  };
+
   return (
-    <div
-      className="navbar"
-      style={{
-        padding: "10px",
-        display: "flex",
-        justifyContent: "flex-end",
-        borderBottom: "1px solid #ccc",
-      }}
-    >
+    <div className="w-full bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
+      <h1
+        className="text-xl font-bold text-indigo-600 cursor-pointer"
+        onClick={() => navigate("/")}
+      >
+        DeshiCart
+      </h1>
+
       {profile && (
-        <div
-          onClick={() => navigate("/seller/edit-profile")}
-          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
-        >
-          <img
-            src={profile.PROFILEIMAGE || "/images/placeholder.jpg"}
-            alt="Profile"
-            width="40"
-            height="40"
-            style={{ borderRadius: "50%", marginRight: "8px" }}
-          />
-          <span>{profile.NAME}</span>
+        <div className="flex items-center space-x-4">
+          <div
+            onClick={() => navigate("/seller/edit-profile")}
+            className="flex items-center cursor-pointer hover:bg-indigo-50 px-3 py-1 rounded transition"
+          >
+            <img
+              src={profile.PROFILEIMAGE || "/images/placeholder.jpg"}
+              alt="Profile"
+              className="w-10 h-10 rounded-full object-cover mr-2"
+            />
+            <span className="font-medium text-gray-800">{profile.NAME}</span>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded shadow transition"
+          >
+            Logout
+          </button>
         </div>
       )}
     </div>
@@ -48,7 +64,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-
-
-

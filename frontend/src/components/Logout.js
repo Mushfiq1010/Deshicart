@@ -4,7 +4,7 @@ import API from "../Api.js";
 const Logout = () => {
   const handleLogout = async () => {
     try {
-      await API.post("/logout");
+      await API.post("/auth/logout");
       alert("Logged out successfully");
     } catch (err) {
       alert("Logout failed");

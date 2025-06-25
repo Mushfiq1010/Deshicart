@@ -80,76 +80,101 @@ const EditProfile = () => {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>Edit Seller Profile</h2>
+    <div className="min-h-screen bg-indigo-50 flex flex-col items-center py-10 px-4">
+      <div className="bg-white rounded-lg shadow-md max-w-lg w-full p-8">
+        <h2 className="text-2xl font-semibold mb-6 text-center">Edit Seller Profile</h2>
 
-      <form onSubmit={handleSubmit} encType="multipart/form-data">
-        <div>
-          <label>Profile Image:</label><br />
-          {preview && (
-            <img
-              src={preview}
-              alt="Preview"
-              style={{ width: "100px", borderRadius: "50%" }}
+        <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
+          <div className="flex flex-col items-center">
+            {preview ? (
+              <img
+                src={preview}
+                alt="Profile Preview"
+                className="w-24 h-24 rounded-full object-cover mb-3 border"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gray-200 mb-3 flex items-center justify-center text-gray-400 text-sm border">
+                No Image
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="text-sm text-gray-600"
             />
-          )}
-          <br />
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-        </div>
+          </div>
 
-        <div>
-          <label>Name:</label><br />
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
+          <div>
+            <label className="block mb-1 font-medium">Name</label>
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              className="input"
+              placeholder="Your Name"
+            />
+          </div>
 
-        <div>
-          <label>Phone:</label><br />
-          <input type="text" value={phone} disabled />
-        </div>
+          <div>
+            <label className="block mb-1 font-medium">Phone</label>
+            <input
+              type="text"
+              value={phone}
+              disabled
+              className="input bg-gray-100 cursor-not-allowed"
+            />
+          </div>
 
-        <div>
-          <label>Store Name:</label><br />
-          <input
-            name="storename"
-            value={form.storename}
-            onChange={handleChange}
-            required
-          />
-        </div>
+          <div>
+            <label className="block mb-1 font-medium">Store Name</label>
+            <input
+              name="storename"
+              value={form.storename}
+              onChange={handleChange}
+              required
+              className="input"
+              placeholder="Store Name"
+            />
+          </div>
 
-        <div>
-          <label>Description:</label><br />
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            required
-          ></textarea>
-        </div>
+          <div>
+            <label className="block mb-1 font-medium">Description</label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              required
+              className="input h-24 resize-none"
+              placeholder="Store Description"
+            />
+          </div>
 
-        <div>
-          <label>Email:</label><br />
-          <input type="email" value={email} disabled />
-        </div>
+          <div>
+            <label className="block mb-1 font-medium">Email</label>
+            <input
+              type="email"
+              value={email}
+              disabled
+              className="input bg-gray-100 cursor-not-allowed"
+            />
+          </div>
 
-        <button type="submit" style={{ marginTop: "1rem" }}>
-          Update Profile
+          <button type="submit" className="btn w-full">
+            Update Profile
+          </button>
+        </form>
+
+        <button
+          onClick={goToChangePassword}
+          className="btn mt-4 w-full bg-gray-500 hover:bg-gray-600"
+        >
+          Change Password
         </button>
-      </form>
-
-      <button onClick={goToChangePassword} style={{ marginTop: "1rem" }}>
-        Change Password
-      </button>
+      </div>
     </div>
   );
 };
 
 export default EditProfile;
-
-
-

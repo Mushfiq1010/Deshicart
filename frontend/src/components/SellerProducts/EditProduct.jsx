@@ -18,8 +18,7 @@ const EditProduct = () => {
     const fetchProduct = async () => {
       try {
         const res = await API.get(`/products/${id}`);
-        if (res.data.length === 0) return alert("Product not found");
-        const p = res.data[0]; // Oracle may return array
+        const p = res.data[0];
         setForm({
           name: p.NAME,
           description: p.DESCRIPTION,
@@ -35,7 +34,8 @@ const EditProduct = () => {
     fetchProduct();
   }, [id]);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,20 +49,17 @@ const EditProduct = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ padding: "1rem" }}>
-      <h2>Edit Product</h2>
-      <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required />
-      <br />
-      <input name="description" placeholder="Description" value={form.description} onChange={handleChange} required />
-      <br />
-      <input name="price" type="number" placeholder="Price" value={form.price} onChange={handleChange} required />
-      <br />
-      <input name="quantity" type="number" placeholder="Quantity" value={form.quantity} onChange={handleChange} required />
-      <br />
-      <input name="categoryid" placeholder="Category ID" value={form.categoryid} onChange={handleChange} required />
-      <br />
-      <button type="submit">Update Product</button>
-    </form>
+    <div className="min-h-screen flex items-center justify-center bg-indigo-50 px-4">
+      <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg space-y-4">
+        <h2 className="text-2xl font-bold text-center mb-4">Edit Product</h2>
+        <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required className="input" />
+        <input name="description" placeholder="Description" value={form.description} onChange={handleChange} required className="input" />
+        <input name="price" type="number" placeholder="Price" value={form.price} onChange={handleChange} required className="input" />
+        <input name="quantity" type="number" placeholder="Quantity" value={form.quantity} onChange={handleChange} required className="input" />
+        <input name="categoryid" placeholder="Category ID" value={form.categoryid} onChange={handleChange} required className="input" />
+        <button type="submit" className="btn">Update Product</button>
+      </form>
+    </div>
   );
 };
 
