@@ -1,7 +1,7 @@
 import oracledb from "oracledb";
 import { connectDB } from "../db/dbconnect.js";
 import cloudinary from '../lib/utils/cloudinary.js'; 
-// GET all products
+
 export const getProducts = async (req, res) => {
   let conn;
   try {
@@ -88,9 +88,6 @@ const result = await conn.execute(
 };
 
 
-
-
-// GET single product
 export const getProduct = async (req, res) => {
   let conn;
   try {
@@ -116,7 +113,6 @@ export const getProduct = async (req, res) => {
   }
 };
 
-// CREATE product (only for authenticated seller)
 export const createProduct = async (req, res) => {
   let conn;
   try {
@@ -125,7 +121,6 @@ export const createProduct = async (req, res) => {
 
     conn = await connectDB();
 
-    // Insert product first
     const productResult = await conn.execute(
       `INSERT INTO PRODUCT (SELLERID, NAME, DESCRIPTION, PRICE, QUANTITY, CATEGORYID)
        VALUES (:sellerId, :name, :description, :price, :quantity, :categoryid)
@@ -143,26 +138,22 @@ export const createProduct = async (req, res) => {
 
     const productId = productResult.outBinds.productId[0];
 
-    // Check if files are uploaded
     if (req.files && req.files.length > 0) {
-      // Upload each file to Cloudinary and insert into IMAGE and PRODUCTIMAGE tables
       for (const file of req.files) {
-        // Wrapping the Cloudinary upload_stream in a Promise
         const uploadResult = await new Promise((resolve, reject) => {
           const cloudRes = cloudinary.uploader.upload_stream(
             { resource_type: "image" },
             (error, result) => {
               if (error) {
-                return reject(error); // Reject the promise if there's an error
+                return reject(error); 
               }
-              resolve(result); // Resolve the promise with the result
+              resolve(result); 
             }
           );
 
-          cloudRes.end(file.buffer); // Send the file buffer to Cloudinary
+          cloudRes.end(file.buffer); 
         });
 
-        // Now you can use `uploadResult` as the result from Cloudinary
         const imageRes = await conn.execute(
           `INSERT INTO IMAGE (IMAGEURL) VALUES (:url) RETURNING IMAGEID INTO :imageId`,
           {
@@ -173,7 +164,6 @@ export const createProduct = async (req, res) => {
 
         const imageId = imageRes.outBinds.imageId[0];
 
-        // Associate the uploaded image with the product in PRODUCTIMAGE table
         await conn.execute(
           `INSERT INTO PRODUCTIMAGE (PRODUCTID, IMAGEID) VALUES (:productId, :imageId)`,
           {
@@ -195,7 +185,6 @@ export const createProduct = async (req, res) => {
 };
 
 
-// DELETE product (only if owned by seller)
 export const deleteProduct = async (req, res) => {
   let conn;
   try {
@@ -204,7 +193,6 @@ export const deleteProduct = async (req, res) => {
 
     conn = await connectDB();
 
-    // Step 1: Get all image IDs associated with the product
     const imageResult = await conn.execute(
       `SELECT i.IMAGEID 
        FROM PRODUCTIMAGE pi
@@ -214,19 +202,16 @@ export const deleteProduct = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    // Step 2: Delete associations from PRODUCTIMAGE table
     await conn.execute(
       `DELETE FROM PRODUCTIMAGE WHERE PRODUCTID = :id`,
       [Number(id)],
       { autoCommit: true }
     );
 
-    // Step 3: Delete images from IMAGE table if they are not associated with other products
-    for (const row of imageResult.rows) {
+     for (const row of imageResult.rows) {
       const imageId = row.IMAGEID;
 
-      // Check if the image is used by other products
-      const imageCountResult = await conn.execute(
+     const imageCountResult = await conn.execute(
         `SELECT COUNT(*) AS COUNT FROM PRODUCTIMAGE WHERE IMAGEID = :imageId`,
         [imageId],
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -234,7 +219,7 @@ export const deleteProduct = async (req, res) => {
 
       const imageCount = imageCountResult.rows[0].COUNT;
 
-      // If no other product is using this image, delete it
+      
       if (imageCount === 0) {
         await conn.execute(
           `DELETE FROM IMAGE WHERE IMAGEID = :imageId`,
@@ -244,7 +229,6 @@ export const deleteProduct = async (req, res) => {
       }
     }
 
-    // Step 4: Delete the product itself
     const result = await conn.execute(
       `DELETE FROM Product WHERE ProductID = :id AND SellerID = :sellerId`,
       {
@@ -268,7 +252,7 @@ export const deleteProduct = async (req, res) => {
 };
 
 
-// UPDATE product (only if owned by seller)
+
 export const updateProduct = async (req, res) => {
   let conn;
   try {
