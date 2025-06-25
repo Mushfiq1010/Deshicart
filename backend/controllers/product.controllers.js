@@ -5,24 +5,50 @@ import cloudinary from '../lib/utils/cloudinary.js';
 export const getProducts = async (req, res) => {
   let conn;
   try {
+    const { name, minPrice, maxPrice, category } = req.query;
     conn = await connectDB();
-const result = await conn.execute(
-  `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
-          i.IMAGEURL
-   FROM PRODUCT p
-   LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
-     AND pi.IMAGEID = (
-          SELECT MIN(IMAGEID)
-          FROM PRODUCTIMAGE
-          WHERE PRODUCTID = p.PRODUCTID
-     )
-   LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID`,
-  [],
-  { outFormat: oracledb.OUT_FORMAT_OBJECT }
-);
 
+    let query = `
+      SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
+             i.IMAGEURL
+      FROM PRODUCT p
+      LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
+        AND pi.IMAGEID = (
+             SELECT MIN(IMAGEID)
+             FROM PRODUCTIMAGE
+             WHERE PRODUCTID = p.PRODUCTID
+        )
+      LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
+      WHERE 1 = 1
+    `;
 
-    const products = result.rows.map(row => ({
+    const params = {};
+
+    if (name) {
+      query += ` AND LOWER(p.NAME) LIKE :name`;
+      params.name = `%${name.toLowerCase()}%`;
+    }
+
+    if (minPrice) {
+      query += ` AND p.PRICE >= :minPrice`;
+      params.minPrice = Number(minPrice);
+    }
+
+    if (maxPrice) {
+      query += ` AND p.PRICE <= :maxPrice`;
+      params.maxPrice = Number(maxPrice);
+    }
+
+    if (category) {
+      query += ` AND p.CATEGORYID = :category`;
+      params.category = Number(category);
+    }
+
+    const result = await conn.execute(query, params, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+
+    const products = result.rows.map((row) => ({
       productId: row.PRODUCTID,
       name: row.NAME,
       description: row.DESCRIPTION,
@@ -30,19 +56,17 @@ const result = await conn.execute(
       quantity: row.QUANTITY,
       categoryId: row.CATEGORYID,
       sellerId: row.SELLERID,
-      firstImageUrl: row.IMAGEURL
+      firstImageUrl: row.IMAGEURL,
     }));
 
     res.json(products);
   } catch (err) {
     console.error("Error in getProducts:", err);
-    res.status(500).send("Database error");
+    res.status(500).json({ error: "Database error" });
   } finally {
     if (conn) await conn.close();
   }
 };
-
-
 
 export const getSellerProducts = async (req, res) => {
   let conn;

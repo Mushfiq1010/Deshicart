@@ -7,10 +7,41 @@ function AllProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [filters, setFilters] = useState({
+    name: "",
+    minPrice: "",
+    maxPrice: "",
+    category: ""
+  });
+
+  const fetchProducts = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+
+      if (filters.name) queryParams.append("name", filters.name);
+      if (filters.minPrice) queryParams.append("minPrice", filters.minPrice);
+      if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
+      if (filters.category) queryParams.append("category", filters.category);
+
+      const res = await API.get(`/products/all?${queryParams.toString()}`);
+      setProducts(res.data);
+    } catch (err) {
+      console.error("Failed to fetch products", err);
+      setError("Failed to load products.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [filters]);
+
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await API.get("/products/all"); 
+        const res = await API.get("/products/all");
         setProducts(res.data);
       } catch (err) {
         console.error("Failed to fetch products", err);
@@ -31,6 +62,37 @@ function AllProducts() {
   return (
     <div className="bg-gradient-to-br from-sky-50 to-indigo-50 min-h-screen">
       <Navbar />
+      <div className="flex flex-wrap gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by name"
+          value={filters.name}
+          onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+          className="border p-2 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Min Price"
+          value={filters.minPrice}
+          onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+          className="border p-2 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Max Price"
+          value={filters.maxPrice}
+          onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+          className="border p-2 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Category ID"
+          value={filters.category}
+          onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+          className="border p-2 rounded"
+        />
+      </div>
+
       <div className="max-w-6xl mx-auto px-6 py-8">
         <h2 className="text-2xl font-semibold text-gray-800 mb-6">Explore All Products</h2>
 
