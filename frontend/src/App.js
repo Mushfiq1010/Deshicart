@@ -11,6 +11,7 @@ import EditProfile from "./components/Editprofile";
 import ChangePassword from "./components/changePassword";
 import Allproducts from "./components/customerProducts/Allproducts";
 import ProductPage from "./pages/ProductPage";
+import OrderPage from "./pages/OrderPage"; // Adjust path
 import { CategoryProvider } from "./context/CategoryContext"; // ✅ import
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <Route path="/seller/edit-profile" element={<EditProfile />} />
         <Route path="/seller/change-password" element={<ChangePassword />} />
         <Route path="/customer/products/:id" element={<ProductPage />} />
+        <Route path="/order/:id" element={<OrderPage />} />
       </Routes>
       </CategoryProvider>
     </Router>

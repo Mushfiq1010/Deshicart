@@ -199,17 +199,13 @@ const ProductPage = () => {
                   Add to Cart
                 </button>
 
-                <button
-                  disabled={product.QUANTITY === 0}
-                  onClick={handleOrder}
-                  className={`w-full py-2 rounded-lg text-white font-semibold transition ${
-                    product.QUANTITY > 0
-                      ? "bg-orange-500 hover:bg-orange-600"
-                      : "bg-gray-400 cursor-not-allowed"
-                  }`}
+                <Link
+                  to={`/order/${product.PRODUCTID}`}
+                    className="w-full py-2 rounded-lg text-white font-semibold bg-orange-500 hover:bg-orange-600 text-center block"
                 >
-                  Order Now
-                </button>
+                Place Order
+                </Link>
+
               </div>
 
               <hr className="my-4" />
