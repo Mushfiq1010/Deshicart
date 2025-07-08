@@ -12,7 +12,7 @@ import {
 import { protectRoute } from "../middleware/protectroute.js";
 
 const router = express.Router();
-router.get("/all",protectRoute,getProducts)
+router.get("/all",protectRoute,getProducts);
 router.get("/", protectRoute,getSellerProducts);
 router.get("/:id", getProduct);
 router.post("/add", protectRoute,upload.array("images"), createProduct);

@@ -19,7 +19,6 @@ function AddProduct() {
       try {
         const res = await API.get("/categories");
         console.log("Getting categories");
-
         setCategories(res.data);
       } catch (err) {
         console.error("Failed to fetch categories", err);

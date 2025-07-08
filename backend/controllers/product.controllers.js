@@ -8,6 +8,7 @@ export const getProducts = async (req, res) => {
     const { name, minPrice, maxPrice, category } = req.query;
     conn = await connectDB();
 
+    //Have handled only one image
     let query = `
       SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
              i.IMAGEURL
@@ -119,7 +120,18 @@ export const getProduct = async (req, res) => {
     conn = await connectDB();
 
     const result = await conn.execute(
-      `SELECT * FROM Product WHERE ProductID = :id`,
+      `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
+          i.IMAGEURL, s.STORENAME, s.STOREDESCRIPTION
+      FROM PRODUCT p
+      LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
+      AND pi.IMAGEID = (
+          SELECT MIN(IMAGEID)
+          FROM PRODUCTIMAGE
+          WHERE PRODUCTID = p.PRODUCTID
+      )
+      LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
+      JOIN SELLER s ON s.SELLERID = p.SELLERID 
+      WHERE p.PRODUCTID = :productId`,
       [Number(id)],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );

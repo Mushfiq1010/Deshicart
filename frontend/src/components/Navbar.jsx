@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../Api";
 
-const Navbar = () => {
+const Navbar = ({userType}) => {
   const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await API.get("/auth/seller/getMe");
+        const res = await API.get(`/auth/${userType}/getMe`);
         setProfile(res.data);
       } catch (err) {
         console.error("Failed to fetch profile");
@@ -22,7 +22,7 @@ const Navbar = () => {
     try {
       await API.post("/auth/logout");
       alert("Logged out successfully");
-      navigate("/login/seller"); 
+      navigate("/"); 
     } catch (err) {
       alert("Logout failed");
     }
@@ -40,7 +40,7 @@ const Navbar = () => {
       {profile && (
         <div className="flex items-center space-x-4">
           <div
-            onClick={() => navigate("/seller/edit-profile")}
+            onClick={() => navigate(`/${userType}/edit-profile`)}
             className="flex items-center cursor-pointer hover:bg-indigo-50 px-3 py-1 rounded transition"
           >
             <img

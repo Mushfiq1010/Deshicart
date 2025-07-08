@@ -1,31 +1,31 @@
+import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import API from "../Api.js";
-import { useNavigate } from "react-router-dom";
 
-const CustomerLogin = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const navigate = useNavigate();
-
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await API.post("/auth/customer/login", form);
-      alert("Login successful");
-      console.log(res.data);
-      navigate("/customer/products");
-    } catch (err) {
-      alert(err.response?.data?.error || "Login failed");
+const Login = ({userType}) => {
+    const user = userType == "seller" ? "Seller" : "Customer";
+    const [form, setForm] = useState({ email: "", password: "" });
+    const navigate = useNavigate();
+    const handleChange = (e) =>
+        setForm({ ...form, [e.target.name]: e.target.value });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await API.post(`/auth/${userType}/login`, form);
+            localStorage.setItem("token", res.data.token);
+            alert("Login successful");
+            console.log(res.data);
+            navigate(`/${userType}/products`);
+        } catch (err) {
+        alert(err.response?.data?.error || "Login failed");
     }
   };
-
   return (
+    <>
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 to-sky-100 px-4">
       <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md">
         <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-          Customer Login
+          {user} Login
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -60,7 +60,8 @@ const CustomerLogin = () => {
         </form>
       </div>
     </div>
-  );
-};
+    </>
+  )
+}
 
-export default CustomerLogin;
+export default Login

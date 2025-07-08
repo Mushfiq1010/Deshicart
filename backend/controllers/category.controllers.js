@@ -30,3 +30,4 @@ export const getCategories = async (req, res) => {
     }
   }
 };
+
