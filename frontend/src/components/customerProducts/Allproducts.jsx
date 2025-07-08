@@ -61,10 +61,6 @@ function AllProducts() {
     return url.startsWith("http") ? url : `http://localhost:5000/uploads/${url}`;
   };
 
-  const handleViewProduct = (id) => {
-    console.log("Viewing product", id);
-  };
-
   const handleAddToCart = async (productId) => {
     try {
       const quantity = 1;
@@ -85,11 +81,11 @@ function AllProducts() {
   };
 
   const handleOrderNow = (id) => {
-    console.log("Order placed for", id);
+    navigate(`/order/${id}`);
   };
 
   const handleCartClick = () => {
-    navigate("/customer/cart"); // ✅ Go to /cart page
+    navigate("/customer/cart"); 
   };
 
 return (
@@ -168,25 +164,28 @@ return (
                 <p className="text-sm text-gray-600 mb-4">Price: ৳{product.price}</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => handleViewProduct(product.productId)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                >
-                  View Product
-                </button>
-                <button
-                  onClick={() => handleAddToCart(product.productId)}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
-                >
-                  Add to Cart
-                </button>
-                <button
-                  onClick={() => handleOrderNow(product.productId)}
-                  className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 transition"
-                >
-                  Order Now
-                </button>
-              </div>
+  <Link
+    to={`/customer/products/${product.productId}`}
+    className="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded hover:bg-blue-700 transition"
+  >
+    View Product
+  </Link>
+
+  <button
+    onClick={() => handleAddToCart(product.productId)}
+    className="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded hover:bg-blue-700 transition"
+  >
+    Add to Cart
+  </button>
+
+  <button
+    onClick={() => handleOrderNow(product.productId)}
+    className="flex-1 bg-blue-600 text-white text-center px-4 py-2 rounded hover:bg-blue-700 transition"
+  >
+    Order Now
+  </button>
+</div>
+
             </div>
           ))}
         </div>

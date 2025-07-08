@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import {useNavigate, useParams, Link } from "react-router-dom";
 import API from "../Api";
 import { CategoryContext } from "../context/CategoryContext"; // adjust path if needed
 import { useContext } from "react";
@@ -10,6 +10,7 @@ const ProductPage = () => {
   const [path , setPath] = useState("");
   const { id } = useParams();
   const { categoryMap, loading } = useContext(CategoryContext);
+  
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -61,6 +62,25 @@ const ProductPage = () => {
       alert("Order failed");
     }
   }
+
+  const handleAddToCart = async (productId) => {
+    try {
+      const quantity = 1;
+      const res = await API.post("/customer/addcart", {
+        productId,
+        quantity
+      });
+
+      if (res.status === 200) {
+        alert("✅ Added to cart!");
+      } else {
+        alert("❌ Failed to add to cart.");
+      }
+    } catch (err) {
+      console.error("Error adding to cart", err);
+      alert("❌ Error adding to cart.");
+    }
+  };
 
   return (
     <>
@@ -195,6 +215,7 @@ const ProductPage = () => {
                       ? "bg-yellow-500 hover:bg-yellow-600"
                       : "bg-gray-400 cursor-not-allowed"
                   }`}
+                  onClick = {() => handleAddToCart(id)}
                 >
                   Add to Cart
                 </button>
