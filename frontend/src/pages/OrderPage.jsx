@@ -27,11 +27,10 @@ const OrderPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const totalPrice = quantity * product.PRICE;
       const payload = {
         productId: product.PRODUCTID,
         quantity,
-        price: totalPrice,
+        price: product.PRICE,
       };
 
       await API.post("/orders/add", payload);
@@ -92,7 +91,7 @@ const OrderPage = () => {
       </form>
 
       <Link
-        to={`/products/${product.PRODUCTID}`}
+        to={`/customer/products/${product.PRODUCTID}`}
         className="block text-center text-sm text-indigo-600 mt-6 hover:underline"
       >
         ← Back to Product

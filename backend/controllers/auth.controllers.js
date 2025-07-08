@@ -318,9 +318,6 @@ export const getSellerProfile = async (req, res) => {
 };
 
 
-
-
-
 export const updateSellerProfile = async (req, res) => {
   let conn;
   try {
@@ -396,9 +393,6 @@ export const updateSellerProfile = async (req, res) => {
 
 
 
-
-
-
 export const changeSellerPassword = async (req, res) => {
   let conn;
   try {
@@ -447,7 +441,41 @@ export const changeSellerPassword = async (req, res) => {
   }
 };
 
+export const getCustomerProfile = async (req, res) => {
+  let conn;
+  try {
+    const customerId = req.user.USERID;
 
+    conn = await connectDB();
+
+    const result = await conn.execute(
+      `
+      SELECT
+        su.USERID,
+        su.NAME,
+        su.EMAIL,
+        su.PHONE,
+        su.PROFILEIMAGE
+      FROM SERVICEUSER su
+      JOIN CUSTOMER c ON su.USERID = c.CUSTOMERID
+      WHERE su.USERID = :customerId
+      `,
+      { customerId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    res.json(result.rows[0]); 
+  } catch (err) {
+    console.error("Error fetching customer profile:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
 
 
 

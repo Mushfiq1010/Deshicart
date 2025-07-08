@@ -8,29 +8,31 @@ export const createOrder = async (req, res) => {
         const { productId, quantity, price } = req.body;
         const status = 'y';
         conn = await connectDB();
-         const orderResult = await conn.execute(
+        const totalPrice = price * quantity; 
+        const orderResult = await conn.execute(
               `INSERT INTO PRODUCTORDER (CUSTOMERID, SUBTOTAL, STATUS, TOTAL)
-               VALUES (:customerId, :price, :status, :price)
+               VALUES (:customerId, :totalPrice, :status, :totalPrice)
                RETURNING ORDERID INTO :orderId`,
               {
                 customerId,
-                price,
+                totalPrice,
                 status,
-                price,
+                totalPrice,
                 orderId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
               }
             );
     
     const orderId = orderResult.outBinds.orderId[0];
 
+
     await conn.execute(
-          `INSERT INTO ORDERITEM (ORDERID,PRODUCTID, QUANTITY, PRICE, TOTAL) VALUES (:orderId, :productId, :quantity, :price,:price)`,
+          `INSERT INTO ORDERITEM (ORDERID,PRODUCTID, QUANTITY, PRICE, TOTAL) VALUES (:orderId, :productId, :quantity, :price,:totalPrice)`,
           {
             orderId,
             productId,
             quantity,
             price,
-            price
+            totalPrice
           }
         );
         await conn.commit();

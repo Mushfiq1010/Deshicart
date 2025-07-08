@@ -5,19 +5,21 @@ import cloudinary from '../lib/utils/cloudinary.js';
 export const getProducts = async (req, res) => {
   let conn;
   try {
-    const { name, minPrice, maxPrice, category } = req.query;
+    const { name, minPrice, maxPrice, category, page = 1, limit = 6 } = req.query;
     conn = await connectDB();
 
-    //Have handled only one image
-    let query = `
-      SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
-             i.IMAGEURL
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Base query (with filters)
+    let baseQuery = `
       FROM PRODUCT p
       LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
         AND pi.IMAGEID = (
-             SELECT MIN(IMAGEID)
-             FROM PRODUCTIMAGE
-             WHERE PRODUCTID = p.PRODUCTID
+          SELECT MIN(IMAGEID)
+          FROM PRODUCTIMAGE
+          WHERE PRODUCTID = p.PRODUCTID
         )
       LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
       WHERE 1 = 1
@@ -26,26 +28,49 @@ export const getProducts = async (req, res) => {
     const params = {};
 
     if (name) {
-      query += ` AND LOWER(p.NAME) LIKE :name`;
+      baseQuery += ` AND LOWER(p.NAME) LIKE :name`;
       params.name = `%${name.toLowerCase()}%`;
     }
 
     if (minPrice) {
-      query += ` AND p.PRICE >= :minPrice`;
+      baseQuery += ` AND p.PRICE >= :minPrice`;
       params.minPrice = Number(minPrice);
     }
 
     if (maxPrice) {
-      query += ` AND p.PRICE <= :maxPrice`;
+      baseQuery += ` AND p.PRICE <= :maxPrice`;
       params.maxPrice = Number(maxPrice);
     }
 
     if (category) {
-      query += ` AND p.CATEGORYID = :category`;
+      baseQuery += ` AND p.CATEGORYID = :category`;
       params.category = Number(category);
     }
 
-    const result = await conn.execute(query, params, {
+    // Get total count (for frontend pagination)
+    const countResult = await conn.execute(
+      `SELECT COUNT(*) AS TOTAL ${baseQuery}`,
+      params,
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const totalCount = countResult.rows[0].TOTAL;
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    // Final paginated product query
+    const paginatedQuery = `
+      SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, 
+             p.CATEGORYID, p.SELLERID, i.IMAGEURL
+      ${baseQuery}
+      OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
+    `;
+
+    const productParams = {
+      ...params,
+      offset,
+      limit: limitNum,
+    };
+
+    const result = await conn.execute(paginatedQuery, productParams, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
     });
 
@@ -60,7 +85,12 @@ export const getProducts = async (req, res) => {
       firstImageUrl: row.IMAGEURL,
     }));
 
-    res.json(products);
+    res.json({
+      products,
+      totalPages,
+      currentPage: pageNum,
+      totalCount,
+    });
   } catch (err) {
     console.error("Error in getProducts:", err);
     res.status(500).json({ error: "Database error" });

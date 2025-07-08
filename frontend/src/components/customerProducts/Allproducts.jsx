@@ -12,6 +12,9 @@ function AllProducts() {
   const [error, setError] = useState("");
   const { categories, loading } = useContext(CategoryContext);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [filters, setFilters] = useState({
     name: "",
     minPrice: "",
@@ -22,6 +25,8 @@ function AllProducts() {
   const fetchProducts = async () => {
     try {
       const queryParams = new URLSearchParams();
+      queryParams.append("page", page);
+      queryParams.append("limit", 6);
 
       if (filters.name) queryParams.append("name", filters.name);
       if (filters.minPrice) queryParams.append("minPrice", filters.minPrice);
@@ -29,7 +34,8 @@ function AllProducts() {
       if (filters.category) queryParams.append("category", filters.category);
 
       const res = await API.get(`/products/all?${queryParams.toString()}`);
-      setProducts(res.data);
+      setProducts(res.data.products);
+      setTotalPages(res.data.totalPages || 1);
     } catch (err) {
       console.error("Failed to fetch products", err);
       setError("Failed to load products.");
@@ -40,6 +46,10 @@ function AllProducts() {
 
   useEffect(() => {
     fetchProducts();
+  }, [filters,page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [filters]);
 
   const getImageUrl = (url) => {
@@ -121,7 +131,27 @@ function AllProducts() {
   </div>
 </div>
       </div>
+      <div className="flex justify-center mt-6 gap-2">
+  <button
+    disabled={page === 1}
+    onClick={() => setPage(page - 1)}
+    className="px-3 py-1 bg-indigo-500 text-white rounded disabled:bg-gray-300"
+  >
+    Prev
+  </button>
+  <span className="px-3 py-1 text-gray-700">Page {page}</span>
+  <button
+    disabled={page === totalPages}
+    onClick={() => setPage(page + 1)}
+    className="px-3 py-1 bg-indigo-500 text-white rounded disabled:bg-gray-300"
+  >
+    Next
+  </button>
+</div>
+
     </div>
+
+    
   );
 }
 
