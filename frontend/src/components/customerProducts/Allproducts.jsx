@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../Api";
 import Navbar from "../Navbar";
 import { Link } from "react-router-dom";
 import { CategoryContext } from "../../context/CategoryContext"; // adjust path if needed
 import { useContext } from "react";
 
+import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 
 function AllProducts() {
   const [products, setProducts] = useState([]);
@@ -21,6 +23,8 @@ function AllProducts() {
     maxPrice: "",
     category: ""
   });
+
+  const navigate = useNavigate();
 
   const fetchProducts = async () => {
     try {
@@ -57,102 +61,160 @@ function AllProducts() {
     return url.startsWith("http") ? url : `http://localhost:5000/uploads/${url}`;
   };
 
-  return (
-    <div className="bg-gradient-to-br from-sky-50 to-indigo-50 min-h-screen">
-      <Navbar userType="customer"/>
-      <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8">
-        {/* Sidebar Filters */}
-        <div className="w-full md:w-1/4 bg-white rounded-lg p-4 shadow">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Search & Filter</h3>
-          <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              placeholder="Search by name"
-              value={filters.name}
-              onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-              className="border p-2 rounded"
-            />
-            <input
-              type="number"
-              placeholder="Min Price"
-              value={filters.minPrice}
-              onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-              className="border p-2 rounded"
-            />
-            <input
-              type="number"
-              placeholder="Max Price"
-              value={filters.maxPrice}
-              onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-              className="border p-2 rounded"
-            />
-            <input
-              type="number"
-              placeholder="Category ID"
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="border p-2 rounded"
-            />
-          </div>
-        </div>
+  const handleViewProduct = (id) => {
+    console.log("Viewing product", id);
+  };
 
-        {/* Product Grid */}
-        <div className="flex-1">
-  <h2 className="text-2xl font-semibold text-gray-800 mb-6">Explore All Products</h2>
+  const handleAddToCart = async (productId) => {
+    try {
+      const quantity = 1;
+      const res = await API.post("/customer/addcart", {
+        productId,
+        quantity
+      });
 
-  {loading && <p className="text-gray-600">Loading...</p>}
-  {error && <p className="text-red-500">{error}</p>}
+      if (res.status === 200) {
+        alert("✅ Added to cart!");
+      } else {
+        alert("❌ Failed to add to cart.");
+      }
+    } catch (err) {
+      console.error("Error adding to cart", err);
+      alert("❌ Error adding to cart.");
+    }
+  };
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {products.map((product) => (
-      <div
-        key={product.productId}
-        className="bg-white shadow-md rounded-lg p-4 transition hover:shadow-lg flex flex-col justify-between"
-      >
-        <div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">{product.name}</h3>
-          <img
-            src={getImageUrl(product.firstImageUrl)}
-            alt={product.name}
-            className="w-full h-48 object-cover rounded mb-3"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "/images/photo.png";
-            }}
-          />
-          <p className="text-gray-700 mb-1">{product.description}</p>
-          <p className="text-sm text-gray-600 mb-4">Price: ৳{product.price}</p>
-        </div>
-        <Link to={`/customer/products/${product.productId}`} className="inline-block mt-auto bg-blue-600 text-white text-center px-4 py-2 rounded hover:bg-blue-700 transition">
-          View Product
-        </Link>
-      </div>
-    ))}
-  </div>
-</div>
-      </div>
-      <div className="flex justify-center mt-6 gap-2">
-  <button
-    disabled={page === 1}
-    onClick={() => setPage(page - 1)}
-    className="px-3 py-1 bg-indigo-500 text-white rounded disabled:bg-gray-300"
-  >
-    Prev
-  </button>
-  <span className="px-3 py-1 text-gray-700">Page {page}</span>
-  <button
-    disabled={page === totalPages}
-    onClick={() => setPage(page + 1)}
-    className="px-3 py-1 bg-indigo-500 text-white rounded disabled:bg-gray-300"
-  >
-    Next
-  </button>
-</div>
+  const handleOrderNow = (id) => {
+    console.log("Order placed for", id);
+  };
 
+  const handleCartClick = () => {
+    navigate("/customer/cart"); // ✅ Go to /cart page
+  };
+
+return (
+  <div className="bg-gradient-to-br from-sky-50 to-indigo-50 min-h-screen">
+    <Navbar userType="customer" />
+
+    {/* Cart Icon */}
+    <div
+      className="fixed top-4 right-4 p-4 bg-indigo-600 text-white rounded-full cursor-pointer"
+      onClick={handleCartClick}
+    >
+      <ShoppingCartIcon className="h-6 w-6" />
     </div>
 
-    
-  );
+    <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8">
+      {/* Sidebar Filters */}
+      <div className="w-full md:w-1/4 bg-white rounded-lg p-4 shadow">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Search & Filter</h3>
+        <div className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Search by name"
+            value={filters.name}
+            onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+            className="border p-2 rounded"
+          />
+          <input
+            type="number"
+            placeholder="Min Price"
+            value={filters.minPrice}
+            onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+            className="border p-2 rounded"
+          />
+          <input
+            type="number"
+            placeholder="Max Price"
+            value={filters.maxPrice}
+            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+            className="border p-2 rounded"
+          />
+          <input
+            type="number"
+            placeholder="Category ID"
+            value={filters.category}
+            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+            className="border p-2 rounded"
+          />
+        </div>
+      </div>
+
+      {/* Products Section */}
+      <div className="flex-1">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Explore All Products</h2>
+
+        {loading && <p className="text-gray-600">Loading...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
+            <div
+              key={product.productId}
+              className="bg-white shadow-md rounded-lg p-4 transition hover:shadow-lg flex flex-col justify-between"
+            >
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">{product.name}</h3>
+                <img
+                  src={getImageUrl(product.firstImageUrl)}
+                  alt={product.name}
+                  className="w-full h-48 object-cover rounded mb-3"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/images/photo.png";
+                  }}
+                />
+                <p className="text-gray-700 mb-1">{product.description}</p>
+                <p className="text-sm text-gray-600 mb-4">Price: ৳{product.price}</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => handleViewProduct(product.productId)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                >
+                  View Product
+                </button>
+                <button
+                  onClick={() => handleAddToCart(product.productId)}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => handleOrderNow(product.productId)}
+                  className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 transition"
+                >
+                  Order Now
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-center mt-6 gap-2">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className="px-3 py-1 bg-indigo-500 text-white rounded disabled:bg-gray-300"
+          >
+            Prev
+          </button>
+          <span className="px-3 py-1 text-gray-700">Page {page}</span>
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(page + 1)}
+            className="px-3 py-1 bg-indigo-500 text-white rounded disabled:bg-gray-300"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 }
 
 export default AllProducts;
+
+
