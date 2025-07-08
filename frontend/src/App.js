@@ -10,6 +10,7 @@ import EditProduct from "./components/SellerProducts/EditProduct";
 import EditProfile from "./components/Editprofile";
 import ChangePassword from "./components/changePassword";
 import Allproducts from "./components/customerProducts/Allproducts";
+import CartPage from "./components/customerProducts/cartproducts";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/seller/products/edit/:id" element={<EditProduct />} />
         <Route path="/seller/edit-profile" element={<EditProfile />} />
         <Route path="/seller/change-password" element={<ChangePassword />} />
+        <Route path="/customer/cart" element={<CartPage />} />
       </Routes>
     </Router>
   );
