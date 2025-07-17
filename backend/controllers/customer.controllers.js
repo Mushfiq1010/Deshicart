@@ -15,7 +15,7 @@ export const addToCart = async (req, res) => {
   try {
     conn = await connectDB();
 
-    // Check if product already in cart
+  
     const existing = await conn.execute(
       `SELECT CartItemID, Quantity FROM CartItems WHERE CustomerID = :custId AND ProductID = :prodId`,
       { custId: customerId, prodId: productId },
@@ -140,9 +140,6 @@ export const updateCartQuantity = async (req, res) => {
   }
 };
 
-
-
-
 export const placeOrder = async (req, res) => {
   const customerId = req.user.USERID;
   let conn;
@@ -165,7 +162,6 @@ export const placeOrder = async (req, res) => {
       return res.status(400).json({ message: "Cart is empty." });
     }
 
-    // Step 2: Calculate subtotal and total
     let subTotal = 0;
     for (const item of cartItems) {
       subTotal += item.PRICE * item.QUANTITY;
@@ -173,7 +169,6 @@ export const placeOrder = async (req, res) => {
     const total = subTotal; 
     const status = 'y'; 
 
-    // Step 3: Insert into ProductOrder
     const orderResult = await conn.execute(
       `INSERT INTO ProductOrder (CustomerID, SubTotal, Total, Status)
        VALUES (:custId, :subTotal, :total, :status)
@@ -189,7 +184,7 @@ export const placeOrder = async (req, res) => {
 
     const orderId = orderResult.outBinds.orderId[0];
 
-    // Step 4: Insert into OrderItem
+    
     for (const item of cartItems) {
       const itemTotal = item.PRICE * item.QUANTITY;
 
@@ -206,7 +201,6 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // Step 5: Clear Cart
     await conn.execute(
       `DELETE FROM CartItems WHERE CustomerID = :custId`,
       { custId: customerId }

@@ -5,7 +5,7 @@ import cloudinary from '../lib/utils/cloudinary.js';
 export const getProducts = async (req, res) => {
   let conn;
   try {
-    const { name, minPrice, maxPrice, category, page = 1, limit = 6 } = req.query;
+    const { name, minPrice, maxPrice, category, page = 1, limit = 12 } = req.query;
     conn = await connectDB();
 
     const pageNum = Number(page);
@@ -43,11 +43,26 @@ export const getProducts = async (req, res) => {
     }
 
     if (category) {
-      baseQuery += ` AND p.CATEGORYID = :category`;
-      params.category = Number(category);
-    }
 
-    // Get total count (for frontend pagination)
+  const categoryResult = await conn.execute(
+    `SELECT CATEGORYID FROM CATEGORY
+     START WITH CATEGORYID = :category
+     CONNECT BY PRIOR CATEGORYID = PARENTID`,
+    { category: Number(category) },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  const categoryIds = categoryResult.rows.map(row => row.CATEGORYID);
+  if (categoryIds.length > 0) {
+    const placeholders = categoryIds.map((_, idx) => `:cat${idx}`).join(", ");
+    baseQuery += ` AND p.CATEGORYID IN (${placeholders})`;
+    categoryIds.forEach((id, idx) => {
+      params[`cat${idx}`] = id;
+    });
+  }
+}
+
+
     const countResult = await conn.execute(
       `SELECT COUNT(*) AS TOTAL ${baseQuery}`,
       params,
@@ -56,10 +71,9 @@ export const getProducts = async (req, res) => {
     const totalCount = countResult.rows[0].TOTAL;
     const totalPages = Math.ceil(totalCount / limitNum);
 
-    // Final paginated product query
     const paginatedQuery = `
       SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, 
-             p.CATEGORYID, p.SELLERID, i.IMAGEURL
+             p.CATEGORYID, p.SELLERID,i.IMAGEURL
       ${baseQuery}
       OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     `;
@@ -151,7 +165,7 @@ export const getProduct = async (req, res) => {
 
     const result = await conn.execute(
       `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
-          i.IMAGEURL, s.STORENAME, s.STOREDESCRIPTION
+          p.AVERAGERATING,i.IMAGEURL, s.STORENAME, s.STOREDESCRIPTION
       FROM PRODUCT p
       LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
       AND pi.IMAGEID = (

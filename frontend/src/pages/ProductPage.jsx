@@ -5,21 +5,22 @@ import { CategoryContext } from "../context/CategoryContext"; // adjust path if 
 import { useContext } from "react";
 
 const ProductPage = () => {
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [product, setProduct] = useState({});
   const [reviews, setReviews] = useState([]);
   const [path , setPath] = useState("");
   const { id } = useParams();
   const { categoryMap, loading } = useContext(CategoryContext);
   
+  
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const res = await API.get(`/products/${id}`);
         setProduct(res.data);
-        /* const result = await API.get(`/categories/${res.data.CATEGORYID}`);
-        setPath(result.data);
-      */
-        
         } catch (err) {
         console.error("Failed to fetch product", err);
       }
@@ -27,7 +28,7 @@ const ProductPage = () => {
 
     const fetchReviews = async () => {
       try {
-        const res = await API.get(`/reviews/product/${id}`);
+        const res = await API.get(`/reviews/${id}`);
         setReviews(res.data);
         
       } catch (err) {
@@ -48,6 +49,41 @@ const ProductPage = () => {
     }
     setPath(result.join("->"));
   },[product]);
+
+  const handleSubmitReview = async () => {
+  if (!newComment.trim()) {
+    alert("Please write a comment.");
+    return;
+  }
+
+  try {
+    setSubmitting(true);
+    const res = await API.post("/reviews", {
+      productId: Number(id),
+      ratingValue: newRating,
+      commentText: newComment,
+      imageId: null, 
+    });
+
+    alert("✅ Review submitted!");
+    setNewComment("");
+    setNewRating(5);
+    
+    // Refresh reviews
+    const refreshed = await API.get(`/reviews/${id}`);
+    setReviews(refreshed.data);
+
+    //Refresh product to update the product rating
+    const refreshedProduct = await API.get(`/products/${id}`);
+    setProduct(refreshedProduct.data);
+  } catch (err) {
+    console.error("Failed to submit review", err);
+    alert("❌ Failed to submit review.");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   const handleOrder = async () =>{
     try {
@@ -138,7 +174,7 @@ const ProductPage = () => {
               </p>
             </div>
 
-            {/* Customer Reviews Section */}
+            
             <div className="bg-white p-6 rounded-lg shadow">
   <h3 className="text-xl font-semibold text-indigo-800 mb-4 border-b pb-2">
     Customer Reviews
@@ -167,15 +203,15 @@ const ProductPage = () => {
           }}
         >
           <p className="text-sm text-gray-800 font-medium">
-            ⭐ {review.rating} — {review.reviewerName}
-          </p>
-          <p
-            className="text-gray-600 text-sm break-words whitespace-pre-wrap break-all"
-            style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
-          >
-            {review.comment}
-          </p>
-        </div>
+  ⭐ {review.RATINGVALUE} — {review.CUSTOMERNAME}
+</p>
+<p
+  className="text-gray-600 text-sm break-words whitespace-pre-wrap break-all"
+  style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+>
+  {review.COMMENTTEXT}
+</p>
+  </div>
       ))}
     </div>
   ) : (
@@ -185,14 +221,46 @@ const ProductPage = () => {
 >
   No review yet 
 </p>
-
   )}
+
+  <hr className="my-4" />
+<h4 className="text-md font-semibold text-gray-800 mb-2">Submit a Review</h4>
+
+<div className="space-y-3">
+  <select
+    value={newRating}
+    onChange={(e) => setNewRating(Number(e.target.value))}
+    className="w-full border border-indigo-300 p-2 rounded-lg focus:ring-indigo-500"
+  >
+    {[5, 4, 3, 2, 1].map((val) => (
+      <option key={val} value={val}>
+        {val} Star{val > 1 && "s"}
+      </option>
+    ))}
+  </select>
+
+  <textarea
+    value={newComment}
+    onChange={(e) => setNewComment(e.target.value)}
+    rows={4}
+    className="w-full border border-gray-300 p-3 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500"
+    placeholder="Write your review..."
+  />
+
+  <button
+    onClick={handleSubmitReview}
+    disabled={submitting}
+    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50"
+  >
+    {submitting ? "Submitting..." : "Submit Review"}
+  </button>
+</div>
 </div>
 
 
           </div>
 
-          {/* Purchase Column */}
+         
           <div className="lg:col-span-3">
             <div className="bg-white p-6 rounded-lg shadow sticky top-20">
               <p className="text-2xl font-bold text-orange-600 mb-2">
@@ -231,7 +299,6 @@ const ProductPage = () => {
 
               <hr className="my-4" />
 
-      {/* Store Info Section */}
 <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 p-6 rounded-xl shadow mt-6">
   <h3 className="text-lg font-bold text-indigo-800 mb-3 flex items-center gap-2">
     🏬 Store Information

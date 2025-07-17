@@ -1,0 +1,79 @@
+-- Seller 27 - Electronics & Beauty
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('27', 'Sony WH-1000XM4', 'Industry-leading noise cancelling headphones', '29999', '10', '37', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('27', 'L’Oréal Paris Night Cream', 'Hydrates and revitalizes your skin overnight', '1450', '20', '50', NULL);
+
+-- Seller 30 - Clothing & Books
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('30', 'Denim Jacket', 'Classic denim jacket for all seasons', '2200', '12', '38', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('30', 'To Kill a Mockingbird', 'Pulitzer Prize-winning novel by Harper Lee', '480', '18', '44', NULL);
+
+-- Seller 31 - Home & Kitchen & Electronics
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('31', 'Samsung 55” Smart TV', '4K UHD LED TV with built-in apps and voice control', '68000', '5', '36', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('31', 'Microwave Oven', '800W compact microwave oven with grill', '8500', '8', '42', NULL);
+
+-- Seller 27 - Beauty, Men's Clothing, Electronics
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('27', 'Beardo Beard Oil', 'Premium beard oil for soft and shiny beards', '499', '25', '50', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('27', 'Casual Polo T-Shirt', 'Comfortable cotton polo for everyday wear', '850', '20', '38', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('27', 'Canon EOS 1500D', 'DSLR camera with 24.1 MP resolution and Wi-Fi', '38000', '6', '35', NULL);
+
+-- Seller 30 - Fiction, Women’s Clothing, Furniture
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('30', 'The Great Gatsby', 'Classic novel by F. Scott Fitzgerald', '350', '15', '44', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('30', 'Floral Maxi Dress', 'Elegant dress perfect for summer outings', '1800', '10', '39', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('30', 'Modern Coffee Table', 'Stylish wooden coffee table for living rooms', '7200', '5', '41', NULL);
+
+-- Seller 31 - Laptops, Kitchen Appliances, Sports
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('31', 'HP Pavilion 15', '15.6" laptop with Intel i5 and 8GB RAM', '58000', '7', '34', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('31', 'Philips Air Fryer', 'Oil-free cooking appliance with digital timer', '9200', '9', '42', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING") 
+VALUES ('31', 'Adidas Football', 'Official size and weight football', '1300', '18', '48', NULL);
+-- Seller 27 – Health, Automotive, Toys & Games
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('27', 'Digital Thermometer', 'Accurate and fast body temperature reader', '320', '30', '30', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('27', 'Car Vacuum Cleaner', 'Portable vacuum cleaner for car interiors', '1499', '12', '28', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('27', 'Lego City Police Set', 'Buildable police truck and station for kids', '2950', '7', '26', NULL);
+
+-- Seller 30 – Kids' Clothing, Health, Toys & Games
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('30', 'Baby Romper Pack', 'Cotton rompers for newborns (pack of 3)', '990', '20', '40', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('30', 'Vitamin C Tablets', 'Immunity booster with 1000mg Vitamin C', '399', '50', '30', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('30', 'Remote Control Car', 'Rechargeable high-speed RC car', '2150', '10', '26', NULL);
+
+-- Seller 31 – Automotive, Kids' Clothing, Health
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('31', 'Motor Oil 5W-30', 'Premium synthetic motor oil for engine protection', '1750', '15', '28', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('31', 'Kids Winter Jacket', 'Insulated winter jacket for children', '2100', '8', '40', NULL);
+
+INSERT INTO "ADMIN"."PRODUCT" ("SELLERID", "NAME", "DESCRIPTION", "PRICE", "QUANTITY", "CATEGORYID", "AVERAGERATING")
+VALUES ('31', 'First Aid Kit', 'Portable emergency first aid box (60 items)', '850', '25', '30', NULL);

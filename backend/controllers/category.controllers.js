@@ -23,6 +23,7 @@ export const getCategories = async (req, res) => {
   } finally {
     if (connection) {
       try {
+        
         await connection.close();
       } catch (err) {
         console.error("Error closing connection:", err);

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import API from "../Api";
 
 const OrderPage = () => {
-  const { id } = useParams(); // productId
+  const { id } = useParams(); 
   const navigate = useNavigate();
   const [product, setProduct] = useState({});
   const [quantity, setQuantity] = useState(1);
