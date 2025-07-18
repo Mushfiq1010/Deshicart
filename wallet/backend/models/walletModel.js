@@ -4,7 +4,7 @@ exports.getWallet = async (userId) => {
   const conn = await db.getConnection();
 
   const [walletResult, trxResult] = await Promise.all([
-    conn.execute(`SELECT balance FROM wallets WHERE user_id = :id`, { id: userId }),
+    conn.execute(`SELECT balance FROM wallets WHERE id = :id`, { id: userId }),
     conn.execute(`SELECT * FROM transactions WHERE user_id = :id ORDER BY created_at DESC`, { id: userId })
   ]);
 
@@ -18,7 +18,7 @@ exports.getWallet = async (userId) => {
 exports.deposit = async (userId, amount) => {
   const conn = await db.getConnection();
 
-  await conn.execute(`UPDATE wallets SET balance = balance + :amount WHERE user_id = :id`, { amount, id: userId });
+  await conn.execute(`UPDATE wallets SET balance = balance + :amount WHERE id = :id`, { amount, id: userId });
   await conn.execute(
     `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'deposit', :amount)`,
     { id: userId, amount },

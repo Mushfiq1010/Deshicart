@@ -6,11 +6,23 @@ import cloudinary from '../lib/utils/cloudinary.js';
 export const sellersignup = async (req, res) => {
   let conn;
   try {
-    const { name, email, password, phone, dateOfBirth, gender,storeName, storeDescription } = req.body;
-
+    const { name, email, password, phone, dateOfBirth, gender,storeName, storeDescription,walletUsername,walletPassword } = req.body;
 
     conn = await connectDB();
 
+    const walletResponse = await fetch("http://localhost:5050/api/auth/authenticate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: req.body.walletUsername, password: req.body.walletPassword }),
+    });
+
+    const walletData = await walletResponse.json();
+    if (!walletData.success) {
+      return res.status(400).json({ error: "Wallet credentials wrong!" });
+    }
+
+    const walletUserId = walletData.walletUserId;
+    
     const userByEmail = await conn.execute(
       `SELECT * FROM SERVICEUSER WHERE Email = :email`,
       [email]
@@ -42,7 +54,7 @@ export const sellersignup = async (req, res) => {
         email,
         passwordHash: hashedPassword,
         phone: phone || null,
-         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         gender: gender || null,
         userId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
       }
@@ -55,12 +67,13 @@ export const sellersignup = async (req, res) => {
     
 
         await conn.execute(
-      `INSERT INTO SELLER (SellerID, StoreName, StoreDescription)
-       VALUES (:userId, :storeName, :storeDescription)`,
+      `INSERT INTO SELLER (SellerID, StoreName, StoreDescription, WalletUser)
+       VALUES (:userId, :storeName, :storeDescription, :walletUser)`,
       {
         userId: newUserId,
         storeName,
-        storeDescription
+        storeDescription,
+        walletUser:req.body.walletUsername
       },
       { autoCommit: true }
     );
@@ -76,7 +89,7 @@ export const sellersignup = async (req, res) => {
       Gender: gender,
       ProfileImage: null,
       CreatedAt: new Date(),
-       StoreName: storeName,
+      StoreName: storeName,
       StoreDescription: storeDescription
     });
 
@@ -322,7 +335,7 @@ export const updateSellerProfile = async (req, res) => {
   let conn;
   try {
     const sellerId = req.user.USERID;
-    const { name, storename, description } = req.body;
+    const { name, storename, description, walletUsername, walletPassword } = req.body;
 
     let profilePicUrl;
 
@@ -344,7 +357,7 @@ export const updateSellerProfile = async (req, res) => {
     conn = await connectDB();
 
     const existing = await conn.execute(
-      `SELECT su.NAME, su.PHONE, su.PROFILEIMAGE, s.STORENAME, s.STOREDESCRIPTION
+      `SELECT su.NAME, su.PHONE, su.PROFILEIMAGE, s.STORENAME, s.STOREDESCRIPTION, s.WALLETID
        FROM SERVICEUSER su JOIN SELLER s ON su.USERID = s.SELLERID
        WHERE su.USERID = :sellerId`,
       { sellerId },
@@ -357,6 +370,34 @@ export const updateSellerProfile = async (req, res) => {
 
     const old = existing.rows[0];
 
+    let newWalletId = old.WALLETID;
+
+    // 🔐 Step 1: Authenticate wallet if username & password are provided
+    if (walletUsername && walletPassword) {
+      try {
+        const walletRes = await fetch("http://localhost:5050/api/auth/authenticate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: walletUsername,
+            password: walletPassword,
+          }),
+        });
+
+        const walletData = await walletRes.json();
+
+        if (!walletData.success) {
+          return res.status(400).json({ error: "Wallet credentials are incorrect!" });
+        }
+
+        newWalletId = walletData.walletUserId;
+      } catch (err) {
+        console.error("Wallet auth failed:", err);
+        return res.status(500).json({ error: "Wallet authentication failed" });
+      }
+    }
+
+    // 🔄 Step 2: Update SERVICEUSER
     await conn.execute(
       `UPDATE SERVICEUSER
        SET NAME = :name,
@@ -369,20 +410,24 @@ export const updateSellerProfile = async (req, res) => {
       }
     );
 
+    // 🔄 Step 3: Update SELLER (including WALLETID)
     await conn.execute(
       `UPDATE SELLER
        SET STORENAME = :storename,
-           STOREDESCRIPTION = :description
+           STOREDESCRIPTION = :description,
+           WALLETID = :walletId
        WHERE SELLERID = :sellerId`,
       {
         storename: storename || old.STORENAME,
         description: description || old.STOREDESCRIPTION,
+        walletId: newWalletId,
         sellerId,
       }
     );
 
     await conn.commit();
     res.send("Profile updated successfully");
+
   } catch (err) {
     console.error("Error updating seller profile:", err);
     res.status(500).send("Internal server error");
