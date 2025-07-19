@@ -267,6 +267,38 @@ export const customerLogin = async (req, res) => {
 };
 
 
+
+export const adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    
+    const adminEmail = "admin@deshicart.com";
+    const adminPassword = "admin123"; 
+
+    if (email !== adminEmail || password !== adminPassword) {
+      return res.status(401).json({ error: "Invalid admin credentials" });
+    }
+
+    
+    const adminUserId = -1000;
+
+    generateTokenAndSetCookies(adminUserId, res);
+
+    res.status(200).json({
+      UserID: adminUserId,
+      Name: "Admin",
+      Email: adminEmail,
+      Role: "admin",
+    });
+  } catch (err) {
+    console.error("Error in admin login: ", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
 export const logout = async (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });

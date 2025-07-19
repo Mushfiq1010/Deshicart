@@ -34,6 +34,11 @@ function HomePage() {
               Login as Customer
             </button>
           </Link>
+           <Link to="/login/admin" className="w-full sm:w-auto">
+            <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">
+              Login as Admin
+            </button>
+          </Link>
         </div>
       </div>
     </div>

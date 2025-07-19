@@ -2,11 +2,13 @@ import jwt from "jsonwebtoken";
 import oracledb from "oracledb";
 import { connectDB } from "../db/dbconnect.js";
 
+
 export const protectRoute = async (req, res, next) => {
   let conn;
 
   try {
     const token = req.cookies.jwt;
+    
     
     if (!token) {
       return res.status(401).json({ error: "You must be logged in" });
@@ -14,8 +16,21 @@ export const protectRoute = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!decoded || !decoded.userId) {
+   
+      
       return res.status(401).json({ error: "Invalid token" });
     }
+
+
+    if (decoded.userId === -1000) {
+  req.user = {
+    USERID: -1000,
+    name: "Admin",
+    email: "admin@deshicart.com",
+    role: "admin"
+  };
+  return next();
+}
 
     conn = await connectDB();
 
