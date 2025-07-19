@@ -1,6 +1,6 @@
-const db = require('../config/db');
+import {db} from '../config/db.js';
 
-exports.getWallet = async (userId) => {
+export const getWallet = async (userId) => {
   const conn = await db.getConnection();
 
   const [walletResult, trxResult] = await Promise.all([
@@ -15,7 +15,7 @@ exports.getWallet = async (userId) => {
   };
 };
 
-exports.deposit = async (userId, amount) => {
+export const deposit = async (userId, amount) => {
   const conn = await db.getConnection();
 
   await conn.execute(`UPDATE wallets SET balance = balance + :amount WHERE id = :id`, { amount, id: userId });
@@ -28,7 +28,7 @@ exports.deposit = async (userId, amount) => {
   await conn.close();
 };
 
-exports.withdraw = async (userId, amount) => {
+export const withdraw = async (userId, amount) => {
   const conn = await db.getConnection();
 
   const result = await conn.execute(`SELECT balance FROM wallets WHERE user_id = :id`, { id: userId });

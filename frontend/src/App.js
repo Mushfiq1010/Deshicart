@@ -11,6 +11,7 @@ import EditProfile from "./components/Editprofile";
 import ChangePassword from "./components/changePassword";
 import Allproducts from "./components/customerProducts/Allproducts";
 import ProductPage from "./pages/ProductPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import OrderPage from "./pages/OrderPage"; // Adjust path
 import { CategoryProvider } from "./context/CategoryContext"; // ✅ import
 import CartPage from "./components/customerProducts/cartproducts";
@@ -35,6 +36,7 @@ function App() {
         <Route path="/customer/products/:id" element={<ProductPage />} />
         <Route path="/order/:id" element={<OrderPage />} />
         <Route path="/customer/cart" element={<CartPage />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
       </Routes>
       </CategoryProvider>
     </Router>

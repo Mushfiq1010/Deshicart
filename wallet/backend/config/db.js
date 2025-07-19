@@ -1,9 +1,10 @@
-const oracledb = require('oracledb');
-require('dotenv').config();
+import oracledb from "oracledb";
+import dotenv from "dotenv";
+dotenv.config();
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
-const db = {
+export const db = {
   getConnection: async () => {
     return await oracledb.getConnection({
       user: process.env.DB_USER,
@@ -13,4 +14,3 @@ const db = {
   }
 };
 
-module.exports = db;

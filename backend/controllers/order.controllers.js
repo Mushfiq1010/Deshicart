@@ -4,8 +4,8 @@ import oracledb from "oracledb";
 export const createOrder = async (req, res) => {
   let conn;
   try {
-    const customerId = req.user.USERID;
-    const { productId, quantity, price } = req.body;
+    const customerID = req.user.USERID;
+    const {productId, quantity, price } = req.body;
     conn = await connectDB();
 
     const result = await conn.execute(
@@ -13,7 +13,7 @@ export const createOrder = async (req, res) => {
          PLACE_ORDER(:customerId, :productId, :quantity, :price, :orderId);
        END;`,
       {
-        customerId,
+        customerID,
         productId,
         quantity,
         price,

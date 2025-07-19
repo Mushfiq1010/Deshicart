@@ -1,6 +1,6 @@
-const db = require('../config/db');
+import {db} from '../config/db.js';
 
-exports.createUser = async (username, hashedPassword) => {
+export const createUser = async (username, hashedPassword) => {
   const conn = await db.getConnection();
 
   await conn.execute(
@@ -16,7 +16,7 @@ exports.createUser = async (username, hashedPassword) => {
   return { id: userId, username };
 };
 
-exports.findByUsername = async (username) => {
+export const findByUsername = async (username) => {
   const conn = await db.getConnection();
   const result = await conn.execute(`SELECT * FROM wallets WHERE username = :username`, { username });
   await conn.close();

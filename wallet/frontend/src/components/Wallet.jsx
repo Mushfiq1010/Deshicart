@@ -31,30 +31,57 @@ const Wallet = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("walletToken");
     navigate("/login");
   };
 
-  if (!wallet) return <div>Loading...</div>;
+  if (!wallet) return <div className="text-center mt-10 text-gray-600">Loading...</div>;
 
   return (
-    <div>
-      <h2>Welcome to Wallet</h2>
-      <p><strong>Balance:</strong> ৳{wallet.balance}</p>
-      <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-      <button onClick={deposit}>Deposit</button>
-      <button onClick={withdraw}>Withdraw</button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-lg animate-slide-in">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-indigo-600">Welcome to Wallet</h2>
+          <button onClick={logout} className="text-sm text-red-500 hover:underline">Logout</button>
+        </div>
 
-      <h3>Transaction History</h3>
-      <ul>
-        {wallet.transactions.map((trx) => (
-          <li key={trx.id}>
-            {trx.type} ৳{trx.amount} at {new Date(trx.created_at).toLocaleString()}
-          </li>
-        ))}
-      </ul>
+        <div className="mb-4">
+          <p className="text-lg"><strong>Balance:</strong> <span className="text-green-600">৳{wallet.balance}</span></p>
+        </div>
 
-      <button onClick={logout}>Logout</button>
+        <div className="flex items-center gap-2 mb-6">
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+            className="input"
+          />
+          <button onClick={deposit} className="btn bg-green-500 hover:bg-green-600">Deposit</button>
+          <button onClick={withdraw} className="btn bg-red-500 hover:bg-red-600">Withdraw</button>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Transaction History</h3>
+          <ul className="space-y-2 max-h-48 overflow-y-auto">
+            {wallet.transactions.length === 0 ? (
+              <li className="text-gray-500">No transactions found.</li>
+            ) : (
+              wallet.transactions.map((trx) => (
+                <li
+                  key={trx.ID}
+                  className="p-3 border rounded-lg bg-gray-50 flex justify-between text-sm"
+                >
+                  <span className={trx.type === "DEPOSIT" ? "text-green-600" : "text-red-600"}>
+                    {trx.TYPE} ৳{trx.AMOUNT}
+                  </span>
+                  <span className="text-gray-500">{new Date(trx.CREATED_AT).toLocaleString()}</span>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };

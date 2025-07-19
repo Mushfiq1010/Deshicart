@@ -6,30 +6,19 @@ import cloudinary from '../lib/utils/cloudinary.js';
 export const sellersignup = async (req, res) => {
   let conn;
   try {
-    const { name, email, password, phone, dateOfBirth, gender,storeName, storeDescription,walletUsername,walletPassword } = req.body;
+    const { name, email, password, phone, dateOfBirth, gender, storeName, storeDescription, walletUsername } = req.body;
+
+    if (!walletUsername) {
+      return res.status(400).json({ error: "Missing wallet username. Please add a payment system." });
+    }
 
     conn = await connectDB();
 
-    const walletResponse = await fetch("http://localhost:5050/api/auth/authenticate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: req.body.walletUsername, password: req.body.walletPassword }),
-    });
-
-    const walletData = await walletResponse.json();
-    if (!walletData.success) {
-      return res.status(400).json({ error: "Wallet credentials wrong!" });
-    }
-
-    const walletUserId = walletData.walletUserId;
-    
     const userByEmail = await conn.execute(
       `SELECT * FROM SERVICEUSER WHERE Email = :email`,
       [email]
     );
     if (userByEmail.rows.length > 0) {
-      console.log("email");
-      
       return res.status(400).json({ error: "Email already in use" });
     }
 
@@ -38,8 +27,6 @@ export const sellersignup = async (req, res) => {
       [phone]
     ) : null;
     if (userByPhone && userByPhone.rows.length > 0) {
-      console.log("phone");
-      
       return res.status(400).json({ error: "Phone number already in use" });
     }
 
@@ -64,16 +51,14 @@ export const sellersignup = async (req, res) => {
 
     const newUserId = result.outBinds.userId[0];
 
-    
-
-        await conn.execute(
+    await conn.execute(
       `INSERT INTO SELLER (SellerID, StoreName, StoreDescription, WalletUser)
-       VALUES (:userId, :storeName, :storeDescription, :walletUser)`,
+       VALUES (:userId, :storeName, :storeDescription, :walletUsername)`,
       {
         userId: newUserId,
         storeName,
         storeDescription,
-        walletUser:req.body.walletUsername
+        walletUsername
       },
       { autoCommit: true }
     );
@@ -87,8 +72,6 @@ export const sellersignup = async (req, res) => {
       Phone: phone,
       DateOfBirth: dateOfBirth,
       Gender: gender,
-      ProfileImage: null,
-      CreatedAt: new Date(),
       StoreName: storeName,
       StoreDescription: storeDescription
     });
@@ -224,6 +207,49 @@ export const sellerLogin = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   } finally {
     if (conn) await conn.close();
+  }
+};
+
+export const sellerWallet = async (req, res) => {
+  let conn;  
+  try {
+    console.log("Seller Wallet khujchi");
+    const { id } = req.params;
+    
+    conn = await connectDB();
+    const result = await conn.execute(
+      `SELECT WalletUser FROM SELLER WHERE SELLERID = :id`,
+      [id],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    
+    // Check if seller exists
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+    
+    const user = result.rows[0]; 
+    
+    if (!user.WALLETUSER) {
+      return res.status(404).json({ error: "Seller wallet not configured" });
+    }
+    
+    res.status(200).json({
+      walletUserName: user.WALLETUSER, 
+    });
+    
+  } catch (err) {
+    console.error("Error in seller wallet: ", err.message);
+    res.status(500).json({ error: "Server error" });
+  } finally {
+    // Always close connection
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error("Error closing connection:", closeErr);
+      }
+    }
   }
 };
 

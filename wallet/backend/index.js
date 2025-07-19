@@ -1,14 +1,34 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import authRoutes from './routes/auth.js';
+import walletRoutes from './routes/wallet.js';
+
+dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5050",
+  "http://localhost:4200", 
+  "http://localhost:8000", 
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 
-const authRoutes = require('./routes/auth');
-const walletRoutes = require('./routes/wallet');
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/wallet', walletRoutes);
