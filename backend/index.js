@@ -5,6 +5,7 @@ import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 import cookieParser from "cookie-parser";
 import reviewRoutes from "./routes/review.routes.js"
 import dotenv from "dotenv";
@@ -40,6 +41,7 @@ app.use("/api/orders",orderRoutes);
 app.use("/api/customer",customerRoutes);
 app.use("/api/reviews",reviewRoutes);
 
+app.use("/api/admin",adminRoutes);
 app.listen(8000,async()=>{
     console.log("Server is listening on port 8000!");
 });

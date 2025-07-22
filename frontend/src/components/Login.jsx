@@ -3,7 +3,8 @@ import React, { useState } from "react";
 import API from "../Api.js";
 
 const Login = ({userType}) => {
-    const user = userType == "seller" ? "Seller" : "Customer";
+    const user = userType === "seller" ? "Seller" : userType === "admin" ? "Admin" : "Customer";
+
     const [form, setForm] = useState({ email: "", password: "" });
     const navigate = useNavigate();
     const handleChange = (e) =>
@@ -11,11 +12,17 @@ const Login = ({userType}) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await API.post(`/auth/${userType}/login`, form);
-            localStorage.setItem("token", res.data.token);
+    const res = await API.post(`/auth/${userType}/login`, form, {
+        withCredentials: true,
+      });
+          
             alert("Login successful");
             console.log(res.data);
-            navigate(`/${userType}/products`);
+               if (userType === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate(`/${userType}/products`);
+      }
         } catch (err) {
         alert(err.response?.data?.error || "Login failed");
     }

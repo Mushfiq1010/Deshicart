@@ -273,6 +273,12 @@ export const deleteProduct = async (req, res) => {
 
     conn = await connectDB();
 
+       await conn.execute(
+      `DELETE FROM ORDERITEM WHERE PRODUCTID = :id`,
+      [Number(id)],
+      { autoCommit: true }
+    );
+
     const imageResult = await conn.execute(
       `SELECT i.IMAGEID 
        FROM PRODUCTIMAGE pi
