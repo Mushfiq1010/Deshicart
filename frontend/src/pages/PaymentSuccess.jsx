@@ -6,7 +6,6 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const hasPlacedOrder = useRef(false); 
 
   const productId = searchParams.get("productId");
   const quantity = searchParams.get("quantity");
@@ -14,17 +13,7 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     const placeOrder = async () => {
-      if (hasPlacedOrder.current) return; // already placed
-      hasPlacedOrder.current = true;
-
       try {
-        const payload = {
-          productId: Number(productId),
-          quantity: Number(quantity),
-          price: Number(price),
-        };
-
-        await API.post("/orders/add", payload);
         alert("Payment successful & Order placed!");
         navigate("/customer/products");
       } catch (err) {

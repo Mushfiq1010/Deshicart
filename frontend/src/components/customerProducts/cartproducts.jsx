@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../../Api";
 import Navbar from "../Navbar";
+import { useNavigate } from "react-router-dom";
 
 function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCartItems();
@@ -61,9 +63,7 @@ function CartPage() {
 
   const handleCheckout = async () => {
   try {
-    const res = await API.post("/customer/placeorder");
-    alert("✅ " + res.data.message);
-    fetchCartItems(); 
+    navigate("/cart-pay");
   } catch (err) {
     console.error("Checkout error:", err);
     alert("❌ Failed to place order.");

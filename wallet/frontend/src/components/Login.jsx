@@ -11,7 +11,7 @@ const Login = ({ onLogin }) => {
     try {
       const res = await API.post("/auth/login", { username, password });
       localStorage.setItem("walletToken", res.data.token);
-      onLogin(); // tell App that login is successful
+      onLogin(); 
       navigate("/");
     } catch (err) {
       alert("Login failed");

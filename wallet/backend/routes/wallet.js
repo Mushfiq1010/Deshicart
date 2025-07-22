@@ -1,7 +1,12 @@
 import express from 'express';
 import { getWallet, deposit, withdraw } from '../models/walletModel.js';
-import {auth} from '../middleware/auth.js';
-import {db} from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { db } from '../config/db.js';
+import { findByUsername } from '../models/userModel.js';
+import bcrypt from 'bcryptjs';
+import dotenv from "dotenv";
+dotenv.config();
+
 const router = express.Router();
 
 router.get('/', auth, async (req, res) => {
@@ -10,13 +15,13 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.post('/deposit', auth, async (req, res) => {
-  const { amount} = req.body;
+  const { amount } = req.body;
   await deposit(req.user.id, parseFloat(amount));
   res.json({ message: "Deposit successful" });
 });
 
 router.post('/withdraw', auth, async (req, res) => {
-  const { amount} = req.body;
+  const { amount } = req.body;
   try {
     await withdraw(req.user.id, parseFloat(amount));
     res.json({ message: "Withdraw successful" });
@@ -25,74 +30,113 @@ router.post('/withdraw', auth, async (req, res) => {
   }
 });
 
-router.post('/trx', async (req, res) => {
+router.post('/checkout-cart', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.DESHICART_API_KEY) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized request",
+    });
+  }
+
+  const { transactions, username, password } = req.body;
   let connection;
-  const {amount , sender, receiver } = req.body;
   try {
+    const user = await findByUsername(username);
+    if (!user || !(await bcrypt.compare(password, user.PASSWORD_HASH))) {
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
+    }
+    const buyerId = user.ID;
+
     connection = await db.getConnection();
-    
-    // Start transaction (Oracle uses implicit transactions)
-    // Check sender balance with row locking
-    const senderResult = await connection.execute(
-      `SELECT balance FROM wallets WHERE username = :sender FOR UPDATE`,
-      [sender]
+    await connection.execute(`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+    const balanceResult = await connection.execute(
+      `SELECT balance FROM wallets WHERE username = :username FOR UPDATE`,
+      { username }
     );
-    
-    if (senderResult.rows.length === 0) {
-      throw new Error('Sender wallet not found');
+
+    if (balanceResult.rows.length === 0) {
+      throw new Error('Buyer wallet not found');
     }
-    
-    const senderBalance = senderResult.rows[0].BALANCE;
-    if (senderBalance < amount) {
-      throw new Error('Insufficient balance');
+
+    let balance = balanceResult.rows[0].BALANCE;
+    let totalAmount = 0;
+
+    for (const trx of transactions) {
+      const { amount, sellerWallet } = trx;
+
+      const seller = await findByUsername(sellerWallet);
+      if (!seller) {
+        throw new Error(`Invalid seller wallet: ${sellerWallet}`);
+      }
+
+      if (balance < amount) {
+        throw new Error('Insufficient balance');
+      }
+
+      const withdrawResult = await connection.execute(
+        `UPDATE wallets SET balance = balance - :amount WHERE username = :username`,
+        { amount, username }
+      );
+      if (withdrawResult.rowsAffected === 0) throw new Error('Failed to withdraw');
+
+      const depositResult = await connection.execute(
+        `UPDATE wallets SET balance = balance + :amount WHERE username = :receiver`,
+        { amount, receiver: sellerWallet }
+      );
+      if (depositResult.rowsAffected === 0) throw new Error('Failed to deposit');
+
+      await connection.execute(
+        `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'withdraw', :amount)`,
+        { id: buyerId, amount }
+      );
+      await connection.execute(
+        `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'deposit', :amount)`,
+        { id: seller.ID, amount }
+      );
+
+      balance -= amount;
+      totalAmount += amount;
     }
-    
-    // Withdraw from sender
-    const withdrawResult = await connection.execute(
-  `UPDATE wallets SET balance = balance - :amount WHERE username = :sender`,
-  [amount, sender]
-);
-    
-    if (withdrawResult.rowsAffected === 0) {
-      throw new Error('Failed to withdraw from sender');
-    }
-    
-    // Deposit to receiver
-    const depositResult = await connection.execute(
-      `UPDATE wallets SET balance = balance + :amount WHERE username = :receiver`,
-      [amount, receiver]
-    );
-    
-    if (depositResult.rowsAffected === 0) {
-      throw new Error('Failed to deposit to receiver');
-    }
-    
-    
+
     await connection.commit();
-    
-  res.json({ 
-  success: true, 
-  message: 'Transfer completed successfully',
-  withdrawnAmount: amount,
-  depositedAmount: amount
-});
-    
+
+    res.json({
+      success: true,
+      message: 'All payments processed successfully',
+      totalPaid: totalAmount
+    });
   } catch (error) {
-  if (connection) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
+    res.status(400).json({ success: false, message: error.message });
+  } finally {
+    if (connection) await connection.close();
   }
-  
-  // Add this:
-  res.status(400).json({
-    success: false,
-    message: error.message
-  });
-}finally {
-    // Always release connection back to pool
-    if (connection) {
-      await connection.close();
-    }
+});
+
+router.post('/balance-check', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.DESHICART_API_KEY) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized request",
+    });
   }
+  const { amount, username } = req.body;
+  const user = await findByUsername(username);
+  const conn = await db.getConnection();
+  if (!user) {
+    return res.status(400).json({ success: false, message: "User doesn't exist" });
+  }
+  const result = await conn.execute(`SELECT balance FROM wallets WHERE username = :username`, { username });
+  const balance = result.rows[0].BALANCE;
+  if (balance < amount) {
+    await conn.close();
+    return res.json({ success: false });
+  }
+  await conn.close();
+  return res.json({ success: true });
 });
 
 export default router;

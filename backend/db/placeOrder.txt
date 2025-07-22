@@ -10,7 +10,7 @@ AS
 BEGIN
     -- Insert into PRODUCTORDER and return ORDERID
     INSERT INTO PRODUCTORDER (CUSTOMERID, SUBTOTAL, STATUS, TOTAL)
-    VALUES (p_customer_id, v_total_price, 'y', v_total_price)
+    VALUES (p_customer_id, v_total_price, 'n', v_total_price)
     RETURNING ORDERID INTO p_order_id;
 
     -- Insert into ORDERITEM using returned ORDERID

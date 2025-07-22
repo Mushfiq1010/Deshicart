@@ -11,21 +11,6 @@ const OrderPage = () => {
   const [walletUser, setWalletUser] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const res = await API.get(`/products/${id}`);
-        setProduct(res.data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching product:", err);
-        setLoading(false);
-      }
-    };
-    
-    fetchProduct();
-    
-  }, [id]);
 
   useEffect(() => {
   const fetchProduct = async () => {
@@ -33,78 +18,25 @@ const OrderPage = () => {
       const res = await API.get(`/products/${id}`);
       setProduct(res.data);
       setLoading(false);
-      
-      // Fetch seller wallet after product is loaded
-      if (res.data.SELLERID) {
-        await fetchSellerWallet(res.data.SELLERID);
-      }
+
     } catch (err) {
       console.error("Error fetching product:", err);
       setLoading(false);
     }
   };
-  
-  const fetchSellerWallet = async (sellerId) => {
-    try {
-      console.log('Fetching wallet for seller ID:', sellerId);
-      
-      // Fix: Remove the colon (:) from the URL
-      const res = await API.get(`/auth/seller/wallet/${sellerId}`);
-      
-      if (!res.data || !res.data.walletUserName) {
-        alert("Seller wallet not found. Please contact support.");
-        navigate("/customer/products");
-        return;
-      }
-      
-      setWalletUser(res.data.walletUserName);
-      
-    } catch (err) {
-      console.error("Error fetching seller wallet:", err);
-      
-      if (err.response?.status === 404) {
-        alert("Seller wallet not found. Please contact support.");
-      } else {
-        alert("Error fetching seller wallet. Please try again later.");
-      }
-      
-      navigate("/customer/products");
-    }
-  };
-  
+
   fetchProduct();
 }, [id]);
 
   const handleRedirectToWallet = async (e) => {
   e.preventDefault();
-
   const totalAmount = product.PRICE * quantity;
 
-  const redirectUri = encodeURIComponent(
-    `http://localhost:3000/payment-success?productId=${product.PRODUCTID}&quantity=${quantity}&price=${product.PRICE}`
-    );
-
-  window.location.href = window.location.href = `http://localhost:4200/wallet-pay?sellerWallet=${walletUser}&amount=${totalAmount}&redirect_uri=${redirectUri}&productId=${product.PRODUCTID}&quantity=${quantity}&price=${product.PRICE}`;
-
+  navigate('/wallet-pay?amount=' + totalAmount +
+    '&sellerId=' + product.SELLERID+
+    '&productId=' + product.PRODUCTID +
+    '&quantity=' + quantity);
   };
-
-  /* const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        productId: product.PRODUCTID,
-        quantity,
-        price: product.PRICE,
-      };
-
-      await API.post("/orders/add", payload);
-      alert("Order placed successfully!");
-      navigate("/customer/products");
-    } catch (err) {
-      console.error("Order failed:", err.response?.data || err.message);
-      alert("Order failed. Please try again.");
-    }
-  }; */
 
   if (loading) return <p className="text-center mt-8">Loading product...</p>;
 

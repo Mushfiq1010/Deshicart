@@ -1,14 +1,40 @@
-import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import API from "../Api";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 
 const WalletPay = () => {
   const [searchParams] = useSearchParams();
+  const productId = searchParams.get("productId");
+  const quantity = searchParams.get("quantity");
+  const [sellerWallet, setSellerWallet] = useState("");
   const amount = searchParams.get("amount");
-  const sellerWallet = searchParams.get("sellerWallet");
-  const redirectUri = decodeURIComponent(searchParams.get("redirect_uri"));
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const fetchSellerWallet = async (sellerId) => {
+    try {
+      const res = await API.get(`/auth/seller/wallet/${sellerId}`);
+      if (!res.data || !res.data.walletUserName) {
+        alert("Seller wallet not found. Please contact support.");
+        navigate("/customer/products");
+        return;
+      }
+      setSellerWallet(res.data.walletUserName);
+    } catch (err) {
+      console.error("Error fetching seller wallet:", err);
+      if (err.response?.status === 404) {
+        alert("Seller wallet not found. Please contact support.");
+      } else {
+        alert("Error fetching seller wallet. Please try again later.");
+      }
+      navigate("/customer/products");
+    }
+  };
+
+  useEffect(() => {
+    fetchSellerWallet(searchParams.get("sellerId"));
+  }, []);
 
   const handlePay = async (e) => {
     e.preventDefault();
@@ -19,41 +45,37 @@ const WalletPay = () => {
       return;
     }
 
-    const authRes = await fetch("http://localhost:5050/api/auth/authenticate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const authData = await authRes.json();
-    if (!authData.success) {
-      alert("Invalid wallet credentials");
-      return;
-    }
-
-    localStorage.setItem("walletToken", authData.token);
-
-    const debitRes = await fetch("http://localhost:5050/api/wallet/trx", {
+    const trxRes = await fetch("http://localhost:5050/api/wallet/trx", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${authData.token}`,
+        "x-api-key":'super-secret-deshicart-to-wallet-key',
       },
       body: JSON.stringify({
         amount: amountParam,
         sender: username,
+        password,
         receiver: sellerWallet,
       }),
     });
 
-    const debitData = await debitRes.json();
-    if (!debitData.success) {
-      alert("Transaction failed: " + debitData.message);
+    const trxData = await trxRes.json();
+    if (!trxData.success) {
+      alert("Transaction failed: " + trxData.message + ". Redirecting to DeshiCart...");
+      navigate("/customer/products");
       return;
     }
-
-    alert("✅ Payment successful!");
-    window.location.href = redirectUri;
+    
+      const payload = {
+      productId: Number(productId),
+      quantity: Number(quantity),
+      price: Number(amount),
+     };
+      const res = await API.post("/orders/add", payload);
+     const orderId = res.data.orderId;
+    
+    
+    navigate("/customer/products");
   };
 
   return (

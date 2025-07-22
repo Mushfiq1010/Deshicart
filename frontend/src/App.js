@@ -12,8 +12,10 @@ import ChangePassword from "./components/changePassword";
 import Allproducts from "./components/customerProducts/Allproducts";
 import ProductPage from "./pages/ProductPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
-import OrderPage from "./pages/OrderPage"; // Adjust path
-import { CategoryProvider } from "./context/CategoryContext"; // ✅ import
+import OrderPage from "./pages/OrderPage"; 
+import WalletPay from "./pages/WalletPay"; 
+import CartPay from "./pages/CartPay";
+import { CategoryProvider } from "./context/CategoryContext"; 
 import CartPage from "./components/customerProducts/cartproducts";
 
 function App() {
@@ -37,6 +39,8 @@ function App() {
         <Route path="/order/:id" element={<OrderPage />} />
         <Route path="/customer/cart" element={<CartPage />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/wallet-pay" element={<WalletPay />} />
+        <Route path="/cart-pay" element={<CartPay />} />
       </Routes>
       </CategoryProvider>
     </Router>

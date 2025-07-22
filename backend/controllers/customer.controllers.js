@@ -147,7 +147,6 @@ export const placeOrder = async (req, res) => {
   try {
     conn = await connectDB();
 
-    // Step 1: Fetch cart items with current prices
     const result = await conn.execute(
       `SELECT c.ProductID, c.Quantity, p.Price
        FROM CartItems c
