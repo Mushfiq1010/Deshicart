@@ -9,7 +9,7 @@ export const sellersignup = async (req, res) => {
     const { name, email, password, phone, dateOfBirth, gender, storeName, storeDescription, walletUsername } = req.body;
 
     if (!walletUsername) {
-      return res.status(400).json({ error: "Missing wallet username. Please add a payment system." });
+      return res.status(400).json({ error: "Missing wallet info. Please add a payment system." });
     }
 
     conn = await connectDB();
@@ -47,8 +47,6 @@ export const sellersignup = async (req, res) => {
       }
     );
 
-    await conn.commit();
-
     const newUserId = result.outBinds.userId[0];
 
     await conn.execute(
@@ -59,8 +57,7 @@ export const sellersignup = async (req, res) => {
         storeName,
         storeDescription,
         walletUsername
-      },
-      { autoCommit: true }
+      }
     );
 
     generateTokenAndSetCookies(newUserId, res);
@@ -75,6 +72,7 @@ export const sellersignup = async (req, res) => {
       StoreName: storeName,
       StoreDescription: storeDescription
     });
+    await conn.commit();
 
   } catch (err) {
     console.error("Error in signup: ", err.message);
@@ -124,8 +122,6 @@ export const customersignup = async (req, res) => {
       }
     );
 
-    await conn.commit();
-
     const newUserId = result.outBinds.userId[0];
 
     await conn.execute(
@@ -133,11 +129,12 @@ export const customersignup = async (req, res) => {
        VALUES (:userId)`,
       {
         userId: newUserId,
-      },
-      { autoCommit: true }
+      }
     );
 
     generateTokenAndSetCookies(newUserId, res);
+
+    await conn.commit();
 
     res.status(201).json({
       UserID: newUserId,

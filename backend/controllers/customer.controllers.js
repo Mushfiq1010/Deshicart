@@ -206,11 +206,11 @@ export const placeOrder = async (req, res) => {
     );
 
     await conn.commit();
-    res.status(200).json({ message: "Order placed successfully." });
+    res.status(200).json({ success:true, message: "Order placed successfully." });
 
   } catch (err) {
     console.error("Place order error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({success:true, message: "Internal server error" });
   } finally {
     if (conn) await conn.close();
   }

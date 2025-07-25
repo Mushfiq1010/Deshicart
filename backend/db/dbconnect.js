@@ -6,7 +6,7 @@ let con;
 try {
     con= await OracleDB.getConnection({
     user: "admin",
-    password: "StrongPassword123",
+    password: "Romim2003",
     connectionString: "localhost/deshicart" 
     
 })

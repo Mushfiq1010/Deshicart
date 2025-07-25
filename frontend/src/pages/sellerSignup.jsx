@@ -20,10 +20,17 @@ const SellerSignup = () => {
 
   // On mount, check for walletUsername in the URL (from wallet app redirect)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const walletUsernameFromUrl = params.get("walletUsername");
-    if (walletUsernameFromUrl) setWalletUsername(walletUsernameFromUrl);
-  }, []);
+  const params = new URLSearchParams(window.location.search);
+  const walletUsernameFromUrl = params.get("walletUsername");
+
+  if (walletUsernameFromUrl) setWalletUsername(walletUsernameFromUrl);
+
+  const savedFormData = localStorage.getItem("sellerSignupFormData");
+  if (savedFormData) {
+    setForm(JSON.parse(savedFormData));
+    localStorage.removeItem("sellerSignupFormData"); 
+  }
+}, []);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -87,7 +94,19 @@ const SellerSignup = () => {
             </h3>
             <div className="space-y-3">
               <input name="storeName" placeholder="Store Name" value={form.storeName} onChange={handleChange} required className="input" />
-              <textarea name="storeDescription" placeholder="Store Description" value={form.storeDescription} onChange={handleChange} required rows="3" className="input resize-none"></textarea>
+              <textarea
+                name="storeDescription"
+                placeholder="Store Description"
+                value={form.storeDescription}
+                onChange={handleChange}
+                required
+                maxLength={500}
+                rows={7}
+                className="input resize-none"
+              />
+              <p className="text-sm text-gray-500 text-right">
+                {form.storeDescription.length}/500 characters
+              </p>
             </div>
           </div>
 
@@ -104,8 +123,9 @@ const SellerSignup = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    localStorage.setItem("sellerSignupFormData", JSON.stringify(form));
                     const redirectUri = encodeURIComponent(window.location.origin+"/signup/seller");
-                    window.location.href = `http://localhost:5050/api/auth?redirect_uri=${redirectUri}`;
+                    window.location.href = `http://localhost:4200/add-wallet?redirect_uri=${redirectUri}`;
                   }}
                   className="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
                 >
