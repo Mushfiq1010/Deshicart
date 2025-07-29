@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../Api";
 
-const Navbar = ({userType}) => {
+const Navbar = ({ userType }) => {
   const [profile, setProfile] = useState(null);
+  const [searchText, setSearchText] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,43 +23,80 @@ const Navbar = ({userType}) => {
     try {
       await API.post("/auth/logout");
       alert("Logged out successfully");
-      navigate("/"); 
+      navigate("/");
     } catch (err) {
       alert("Logout failed");
     }
   };
 
+  const handleSearch = () => {
+    navigate(`/customer/products?name=${encodeURIComponent(searchText)}`);
+  };
+
   return (
-    <div className="w-full bg-white border-b shadow-sm px-6 py-3 flex justify-between items-center">
+    <div className="w-full bg-indigo-700 text-white px-6 py-3 flex justify-between items-center shadow-md">
       <h1
-        className="text-xl font-bold text-indigo-600 cursor-pointer"
+        className="text-2xl font-bold cursor-pointer"
         onClick={() => navigate("/")}
       >
         DeshiCart
       </h1>
 
-      {profile && (
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-1 mx-6">
+        <input
+          type="text"
+          placeholder="Search for products..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          className="w-full px-4 py-2 rounded-l-md text-black"
+        />
+        <button
+          onClick={handleSearch}
+          className="bg-yellow-400 text-black px-4 py-2 rounded-r-md"
+        >
+          Search
+        </button>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate("/customer/orders")}
+          className="hover:underline"
+        >
+          Orders
+        </button>
+        <button
+          onClick={() => navigate("/customer/cart")}
+          className="hover:underline"
+        >
+          Cart
+        </button>
+        <button
+          onClick={() => navigate("/customer/wishlist")}
+          className="hover:underline"
+        >
+          Wishlist
+        </button>
+        {profile && (
           <div
             onClick={() => navigate(`/${userType}/edit-profile`)}
-            className="flex items-center cursor-pointer hover:bg-indigo-50 px-3 py-1 rounded transition"
+            className="flex items-center cursor-pointer hover:bg-indigo-600 px-3 py-1 rounded"
           >
             <img
               src={profile.PROFILEIMAGE || "/images/placeholder.jpg"}
               alt="Profile"
-              className="w-10 h-10 rounded-full object-cover mr-2"
+              className="w-8 h-8 rounded-full object-cover mr-2"
             />
-            <span className="font-medium text-gray-800">{profile.NAME}</span>
+            <span className="font-medium">{profile.NAME}</span>
           </div>
-
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded shadow transition"
-          >
-            Logout
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white"
+        >
+          Logout
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import express from "express";
-import { getAllProducts, adminDeleteProduct,deleteSeller,getTopOrderedProducts,getOrderHistory, getTopSellers } from "../controllers/admin.controller.js";
+import { getAllProducts, adminDeleteProduct,deleteSeller,getTopOrderedProducts,getOrderHistory, getTopSellers, getActiveVat, getPendingOrders } from "../controllers/admin.controller.js";
 import { protectRoute } from "../middleware/protectroute.js";
-import { getSellers,getCustomers } from "../controllers/admin.controller.js";
+import { getSellers,getCustomers, getVatByCategory,addOrUpdateVat,acceptOrder,declineOrder } from "../controllers/admin.controller.js";
 import { getCategories,submitCategories,addSingleCategory } from "../controllers/category.controllers.js";
 const router = express.Router();
 
@@ -17,4 +17,10 @@ router.post("/categories/:parentid/add", addSingleCategory);
 router.get("/products/top", getTopOrderedProducts);
 router.get('/orders/history', protectRoute, getOrderHistory);
 router.get('/top-sellers', protectRoute, getTopSellers);
+router.get('/vat/:categoryid', protectRoute, getVatByCategory);
+router.get('/pending-orders', protectRoute, getPendingOrders);
+router.post("/accept-order/:id", acceptOrder);
+router.post("/decline-order/:id", declineOrder);
+router.post('/vat', protectRoute, addOrUpdateVat);
+router.get('/vat/active/:categoryid', protectRoute, getActiveVat);
 export default router;

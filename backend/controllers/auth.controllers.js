@@ -577,5 +577,114 @@ export const getCustomerProfile = async (req, res) => {
   }
 };
 
+export const updateCustomerProfile = async (req, res) => {
+  let conn;
+  try {
+    const customerId = req.user.USERID;
+    const { name } = req.body;
+
+    let profilePicUrl;
+
+    if (req.file) {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: "image" },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+
+      profilePicUrl = uploadResult.secure_url;
+    }
+
+    conn = await connectDB();
+
+    const existing = await conn.execute(
+      `SELECT su.NAME, su.PROFILEIMAGE
+       FROM SERVICEUSER su
+       JOIN CUSTOMER c ON su.USERID = c.CUSTOMERID
+       WHERE su.USERID = :customerId`,
+      { customerId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (existing.rows.length === 0) {
+      return res.status(404).send("Customer not found");
+    }
+
+    const old = existing.rows[0];
+
+    // Update SERVICEUSER table
+    await conn.execute(
+      `UPDATE SERVICEUSER
+       SET NAME = :name,
+           PROFILEIMAGE = :profilePic
+       WHERE USERID = :customerId`,
+      {
+        name: name || old.NAME,
+        profilePic: profilePicUrl || old.PROFILEIMAGE,
+        customerId,
+      }
+    );
+
+    await conn.commit();
+    res.send("Customer profile updated successfully");
+
+  } catch (err) {
+    console.error("Error updating customer profile:", err);
+    res.status(500).send("Internal server error");
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
+export const changeCustomerPassword = async (req, res) => {
+  let conn;
+  try {
+    const customerId = req.user.USERID;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Both current and new passwords are required" });
+    }
+
+    conn = await connectDB();
+
+    const result = await conn.execute(
+      `SELECT PASSWORDHASH FROM SERVICEUSER WHERE USERID = :customerId`,
+      { customerId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const hashed = result.rows[0].PASSWORDHASH;
+
+    const match = await bcrypt.compare(currentPassword, hashed);
+    if (!match) {
+      return res.status(401).json({ error: "Incorrect current password" });
+    }
+
+    const newHashed = await bcrypt.hash(newPassword, 10);
+    await conn.execute(
+      `UPDATE SERVICEUSER SET PASSWORDHASH = :newPassword WHERE USERID = :customerId`,
+      { newPassword: newHashed, customerId }
+    );
+
+    await conn.commit();
+    res.send("Password updated successfully");
+  } catch (err) {
+    console.error("Error changing customer password:", err);
+    res.status(500).send("Internal server error");
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
 
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaFolder, FaFolderOpen } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa";
-import API from "../Api";
+import API from "../../Api";
 const CategoryBuilder = () => {
   const [categories, setCategories] = useState([]);
   const [existingCategories, setExistingCategories] = useState([]);

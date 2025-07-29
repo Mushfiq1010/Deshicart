@@ -8,13 +8,11 @@ export const CategoryProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoryMap,setCategoryMap] = useState({});
-  // Check login status from localStorage (or however you store it)
-  const isLoggedIn = !!localStorage.getItem("token");
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await API.get("/categories"); // your actual API path
+        const res = await API.get("/categories"); 
         setCategories(res.data);
         const map = {};
         res.data.forEach((cat) => {
@@ -29,9 +27,9 @@ export const CategoryProvider = ({ children }) => {
       }
     };
 
-    if (isLoggedIn) fetchCategories();
-    else setLoading(false); // avoid stuck loading state
-  }, [isLoggedIn]);
+    fetchCategories();
+    setLoading(false); 
+  }, []);
 
   return (
     <CategoryContext.Provider value={{ categoryMap, categories, loading }}>

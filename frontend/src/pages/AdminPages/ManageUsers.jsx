@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../Api";
+import API from "../../Api";
 import { FaTrash } from "react-icons/fa";
 
 const ManageUsers = () => {
@@ -49,7 +49,7 @@ const ManageUsers = () => {
   useEffect(() => {
     fetchSellers();
     fetchCustomers();
-    fetchTopSellers(); 
+    fetchTopSellers();
   }, []);
 
   return (
@@ -59,13 +59,19 @@ const ManageUsers = () => {
       <div className="mb-4">
         <button
           onClick={() => setActiveTab("sellers")}
-          className={`px-4 py-2 mr-2 rounded ${activeTab === "sellers" ? "bg-indigo-600 text-white" : "bg-gray-200"}`}
+          className={`px-4 py-2 mr-2 rounded ${
+            activeTab === "sellers" ? "bg-indigo-600 text-white" : "bg-gray-200"
+          }`}
         >
           Sellers
         </button>
         <button
           onClick={() => setActiveTab("customers")}
-          className={`px-4 py-2 rounded ${activeTab === "customers" ? "bg-indigo-600 text-white" : "bg-gray-200"}`}
+          className={`px-4 py-2 rounded ${
+            activeTab === "customers"
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-200"
+          }`}
         >
           Customers
         </button>
@@ -73,34 +79,38 @@ const ManageUsers = () => {
 
       {activeTab === "sellers" && (
         <>
-  
-          
-      {topSellers.length > 0 && (
-  <div className="max-w-7xl mx-auto mb-10">
-<h3 className="text-3xl font-bold text-white bg-gradient-to-r from-green-400 to-blue-500 p-4 mb-6 text-center rounded-lg shadow-lg">
-  🌟 Top Sellers
-</h3>
+          {topSellers.length > 0 && (
+            <div className="max-w-7xl mx-auto mb-10">
+              <h3 className="text-3xl font-bold text-white bg-gradient-to-r from-green-400 to-blue-500 p-4 mb-6 text-center rounded-lg shadow-lg">
+                🌟 Top Sellers
+              </h3>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {topSellers.map((seller, index) => (
-        <div
-          key={seller.SELLER_ID}
-          className="bg-green-50 border border-green-300 shadow-md rounded-lg p-5 relative"
-        >
-          <div className="absolute -top-3 -left-3 bg-green-500 text-white font-extrabold px-4 py-2 rounded-full shadow-lg text-xl">
-            #{index + 1}
-          </div>
-     
-          <p className="text-gray-800 font-semibold text-center">Store: {seller.STORENAME}</p>
-          <p className="text-gray-700 text-center mt-1">Total Products Sold: {seller.TOTAL_SOLD}</p>
-          <p className="text-sm text-gray-600 text-center">Seller ID: {seller.SELLERID}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {topSellers.map((seller, index) => (
+                  <div
+                    key={seller.SELLER_ID}
+                    className="bg-green-50 border border-green-300 shadow-md rounded-lg p-5 relative"
+                  >
+                    <div className="absolute -top-3 -left-3 bg-green-500 text-white font-extrabold px-4 py-2 rounded-full shadow-lg text-xl">
+                      #{index + 1}
+                    </div>
 
-        <p className="mb-4 text-lg font-semibold text-indigo-700 text-center bg-indigo-100 rounded py-2 shadow">
+                    <p className="text-gray-800 font-semibold text-center">
+                      Store: {seller.STORENAME}
+                    </p>
+                    <p className="text-gray-700 text-center mt-1">
+                      Total Products Sold: {seller.TOTAL_SOLD}
+                    </p>
+                    <p className="text-sm text-gray-600 text-center">
+                      Seller ID: {seller.SELLERID}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="mb-4 text-lg font-semibold text-indigo-700 text-center bg-indigo-100 rounded py-2 shadow">
             Total Sellers: {sellers.length}
           </p>
           <table className="w-full table-auto border">
@@ -117,7 +127,7 @@ const ManageUsers = () => {
             <tbody>
               {sellers.map((s) => (
                 <tr key={s.USERID} className="text-center">
-                  <td className="p-2 border">{s.USERID}</td> 
+                  <td className="p-2 border">{s.USERID}</td>
                   <td className="p-2 border">{s.NAME}</td>
                   <td className="p-2 border">{s.EMAIL}</td>
                   <td className="p-2 border">{s.PHONE}</td>
@@ -169,5 +179,3 @@ const ManageUsers = () => {
 };
 
 export default ManageUsers;
-
-

@@ -1,0 +1,9 @@
+CREATE OR REPLACE TRIGGER trg_price_update_history
+AFTER UPDATE OF Price ON Product
+FOR EACH ROW
+WHEN (OLD.Price != NEW.Price)
+BEGIN
+  INSERT INTO ProductPriceHistory (ProductID, Price, ChangedOn)
+  VALUES (:NEW.ProductID, :NEW.Price, SYSDATE);
+END;
+/

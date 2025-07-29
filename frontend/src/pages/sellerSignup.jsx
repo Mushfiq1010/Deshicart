@@ -20,17 +20,17 @@ const SellerSignup = () => {
 
   // On mount, check for walletUsername in the URL (from wallet app redirect)
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const walletUsernameFromUrl = params.get("walletUsername");
+    const params = new URLSearchParams(window.location.search);
+    const walletUsernameFromUrl = params.get("walletUsername");
 
-  if (walletUsernameFromUrl) setWalletUsername(walletUsernameFromUrl);
+    if (walletUsernameFromUrl) setWalletUsername(walletUsernameFromUrl);
 
-  const savedFormData = localStorage.getItem("sellerSignupFormData");
-  if (savedFormData) {
-    setForm(JSON.parse(savedFormData));
-    localStorage.removeItem("sellerSignupFormData"); 
-  }
-}, []);
+    const savedFormData = localStorage.getItem("sellerSignupFormData");
+    if (savedFormData) {
+      setForm(JSON.parse(savedFormData));
+      localStorage.removeItem("sellerSignupFormData");
+    }
+  }, []);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -73,13 +73,55 @@ const SellerSignup = () => {
               Personal Information
             </h3>
             <div className="space-y-3">
-              <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required className="input" />
-              <input name="email" placeholder="Email" value={form.email} onChange={handleChange} required className="input" />
-              <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required className="input" />
-              <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} className="input" />
-              <input name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleChange} className="input" />
-              <select name="gender" value={form.gender} onChange={handleChange} required className="input">
-                <option value="" disabled>Select Gender</option>
+              <input
+                name="name"
+                placeholder="Name"
+                value={form.name}
+                onChange={handleChange}
+                required
+                className="input"
+              />
+              <input
+                name="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                className="input"
+              />
+              <input
+                name="password"
+                type="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                className="input"
+              />
+              <input
+                name="phone"
+                placeholder="Phone"
+                value={form.phone}
+                onChange={handleChange}
+                className="input"
+              />
+              <input
+                name="dateOfBirth"
+                type="date"
+                value={form.dateOfBirth}
+                onChange={handleChange}
+                className="input"
+              />
+              <select
+                name="gender"
+                value={form.gender}
+                onChange={handleChange}
+                required
+                className="input"
+              >
+                <option value="" disabled>
+                  Select Gender
+                </option>
                 <option>Male</option>
                 <option>Female</option>
                 <option>Other</option>
@@ -93,7 +135,14 @@ const SellerSignup = () => {
               Store Information
             </h3>
             <div className="space-y-3">
-              <input name="storeName" placeholder="Store Name" value={form.storeName} onChange={handleChange} required className="input" />
+              <input
+                name="storeName"
+                placeholder="Store Name"
+                value={form.storeName}
+                onChange={handleChange}
+                required
+                className="input"
+              />
               <textarea
                 name="storeDescription"
                 placeholder="Store Description"
@@ -123,8 +172,13 @@ const SellerSignup = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.setItem("sellerSignupFormData", JSON.stringify(form));
-                    const redirectUri = encodeURIComponent(window.location.origin+"/signup/seller");
+                    localStorage.setItem(
+                      "sellerSignupFormData",
+                      JSON.stringify(form)
+                    );
+                    const redirectUri = encodeURIComponent(
+                      window.location.origin + "/signup/seller"
+                    );
                     window.location.href = `http://localhost:4200/add-wallet?redirect_uri=${redirectUri}`;
                   }}
                   className="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
@@ -147,7 +201,10 @@ const SellerSignup = () => {
             >
               Back
             </button>
-            <button type="submit" className="btn bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+            <button
+              type="submit"
+              className="btn bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
+            >
               Sign Up
             </button>
           </div>
@@ -157,8 +214,12 @@ const SellerSignup = () => {
           <div className="mt-6 text-center text-green-700">
             <p className="mb-2">Signup successful. Please log in:</p>
             <div className="flex justify-center gap-4">
-              <Link to="/login/seller" className="link">Seller Login</Link>
-              <Link to="/login/customer" className="link">Customer Login</Link>
+              <Link to="/login/seller" className="link">
+                Seller Login
+              </Link>
+              <Link to="/login/customer" className="link">
+                Customer Login
+              </Link>
             </div>
           </div>
         )}

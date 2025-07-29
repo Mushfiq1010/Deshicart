@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import API from "../../Api";
 import Navbar from "../Navbar";
 import { useNavigate } from "react-router-dom";
 
 function CartPage() {
+  const [vatTotal, setVatTotal] = useState(0);
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -17,9 +18,36 @@ function CartPage() {
     setLoading(true);
     try {
       const res = await API.get("/customer/getcart");
-      if (res.data.cart) setCartItems(res.data.cart);
-      else if (Array.isArray(res.data)) setCartItems(res.data);
-      else setError("Cart data format error.");
+      const rawCart =
+        res.data.cart || (Array.isArray(res.data) ? res.data : []);
+
+      let totalVat = 0;
+
+      const enrichedCart = await Promise.all(
+        rawCart.map(async (item) => {
+          let vatRate = 0;
+          if (item.ROOTCATEGORYID) {
+            const vatRes = await API.get(`/admin/vat/${item.ROOTCATEGORYID}`);
+            vatRate = vatRes.data?.[0]?.rate || 0;
+          }
+
+          const price = item.PRICE;
+          const qty = item.QUANTITY;
+          const vatAmount = (price * qty * vatRate) / 100;
+
+          totalVat += vatAmount;
+
+          return {
+            ...item,
+            vatRate,
+            vatAmount,
+          };
+        })
+      );
+
+      setCartItems(enrichedCart);
+      setVatTotal(totalVat);
+      setError("");
     } catch (err) {
       setError("Failed to load cart.");
     } finally {
@@ -50,30 +78,35 @@ function CartPage() {
   };
 
   const updateQuantity = async (cartItemId, newQty) => {
-    if (newQty < 1) return; 
+    if (newQty < 1) return;
     try {
-        
-      await API.post("/customer/updatecartquantity", { cartItemId, quantity: newQty });
+      await API.post("/customer/updatecartquantity", {
+        cartItemId,
+        quantity: newQty,
+      });
       fetchCartItems();
     } catch {
       alert("Failed to update quantity");
     }
   };
 
-
   const handleCheckout = async () => {
-  try {
-    navigate("/cart-pay");
-  } catch (err) {
-    console.error("Checkout error:", err);
-    alert("❌ Failed to place order.");
-  }
-};
-
+    try {
+      navigate("/cart-pay", {
+        state: {
+          cartItems,
+          vatTotal,
+        },
+      });
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("❌ Failed to place order.");
+    }
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <Navbar />
+      <Navbar userType="customer" />
       <div className="max-w-4xl mx-auto p-6">
         <h2 className="text-2xl font-bold mb-4">Your Cart</h2>
 
@@ -118,7 +151,13 @@ function CartPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p>${(getPrice(item) * qty).toFixed(2)}</p>
+                      <div className="text-right">
+                        <p>Price: ${(getPrice(item) * qty).toFixed(2)}</p>
+                        <p className="text-sm text-gray-500">
+                          + VAT ({item.vatRate}%): ৳{item.vatAmount.toFixed(2)}
+                        </p>
+                      </div>
+
                       <button
                         onClick={() => handleRemove(cartItemId)}
                         className="text-red-500 hover:text-red-700 font-semibold"
@@ -132,16 +171,25 @@ function CartPage() {
             </div>
 
             <div className="text-right font-bold text-lg mt-6">
-              Total: ${total.toFixed(2)}
+              Subtotal: $
+              {cartItems
+                .reduce((sum, item) => sum + getPrice(item) * getQty(item), 0)
+                .toFixed(2)}{" "}
+              <br />
+              VAT: ৳{vatTotal.toFixed(2)} <br />
+              <span className="text-indigo-700">
+                Total Payable: ৳{(total + vatTotal).toFixed(2)}
+              </span>
             </div>
+
             <div className="text-right mt-4">
-  <button
-    onClick={handleCheckout}
-    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
-  >
-    Checkout
-  </button>
-</div>
+              <button
+                onClick={handleCheckout}
+                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
+              >
+                Checkout
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -150,6 +198,3 @@ function CartPage() {
 }
 
 export default CartPage;
-
-
-

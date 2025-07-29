@@ -6,7 +6,8 @@ import {
   createProduct,
   deleteProduct,
   updateProduct,
-  getSellerProducts
+  getSellerProducts,
+  getProductAnalytics
 } from "../controllers/product.controllers.js";
 
 import { protectRoute } from "../middleware/protectroute.js";
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get("/all",protectRoute,getProducts);
 router.get("/", protectRoute,getSellerProducts);
 router.get("/:id", getProduct);
+router.get("/analytics/:id", protectRoute, getProductAnalytics);
 router.post("/add", protectRoute,upload.array("images"), createProduct);
 router.delete("/:id", protectRoute, deleteProduct);
 router.patch("/:id", protectRoute, updateProduct);

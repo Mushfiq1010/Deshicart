@@ -1,18 +1,24 @@
 import oracledb from "oracledb";
 import { connectDB } from "../db/dbconnect.js";
-import cloudinary from '../lib/utils/cloudinary.js'; 
+import cloudinary from "../lib/utils/cloudinary.js";
 
 export const getProducts = async (req, res) => {
   let conn;
   try {
-    const { name, minPrice, maxPrice, category, page = 1, limit = 12 } = req.query;
+    const {
+      name,
+      minPrice,
+      maxPrice,
+      category,
+      page = 1,
+      limit = 12,
+    } = req.query;
     conn = await connectDB();
 
     const pageNum = Number(page);
     const limitNum = Number(limit);
     const offset = (pageNum - 1) * limitNum;
 
-    // Base query (with filters)
     let baseQuery = `
       FROM PRODUCT p
       LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
@@ -27,9 +33,9 @@ export const getProducts = async (req, res) => {
 
     const params = {};
 
-    if (name) {
+    if (name && name.trim()) {
+      params.name = `%${name.toLowerCase().trim()}%`;
       baseQuery += ` AND LOWER(p.NAME) LIKE :name`;
-      params.name = `%${name.toLowerCase()}%`;
     }
 
     if (minPrice) {
@@ -43,25 +49,29 @@ export const getProducts = async (req, res) => {
     }
 
     if (category) {
-
-  const categoryResult = await conn.execute(
-    `SELECT CATEGORYID FROM CATEGORY
+      const categoryResult = await conn.execute(
+        `SELECT CATEGORYID FROM CATEGORY
      START WITH CATEGORYID = :category
      CONNECT BY PRIOR CATEGORYID = PARENTID`,
-    { category: Number(category) },
-    { outFormat: oracledb.OUT_FORMAT_OBJECT }
-  );
+        { category: Number(category) },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
 
-  const categoryIds = categoryResult.rows.map(row => row.CATEGORYID);
-  if (categoryIds.length > 0) {
-    const placeholders = categoryIds.map((_, idx) => `:cat${idx}`).join(", ");
-    baseQuery += ` AND p.CATEGORYID IN (${placeholders})`;
-    categoryIds.forEach((id, idx) => {
-      params[`cat${idx}`] = id;
-    });
-  }
-}
+      const categoryIds = categoryResult.rows.map((row) => row.CATEGORYID);
+      if (categoryIds.length > 0) {
+        const placeholders = categoryIds
+          .map((_, idx) => `:cat${idx}`)
+          .join(", ");
+        baseQuery += ` AND p.CATEGORYID IN (${placeholders})`;
+        categoryIds.forEach((id, idx) => {
+          params[`cat${idx}`] = id;
+        });
+      }
+    }
 
+    let order = "";
+    if (name) order += ` ORDER BY MATCH_SCORE DESC, p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
+    else order += ` ORDER BY p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
 
     const countResult = await conn.execute(
       `SELECT COUNT(*) AS TOTAL ${baseQuery}`,
@@ -71,10 +81,20 @@ export const getProducts = async (req, res) => {
     const totalCount = countResult.rows[0].TOTAL;
     const totalPages = Math.ceil(totalCount / limitNum);
 
+    if (name) {
+      baseQuery =
+        ` ,CASE
+         WHEN :name IS NULL THEN 0
+         ELSE
+           LENGTH(:name)/ LENGTH(p.NAME)
+        END AS MATCH_SCORE
+        ` + baseQuery;
+    }
     const paginatedQuery = `
       SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, 
-             p.CATEGORYID, p.SELLERID,i.IMAGEURL
+       p.CATEGORYID, p.SELLERID, i.IMAGEURL, p.AVERAGERATING
       ${baseQuery}
+      ${order}
       OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     `;
 
@@ -97,6 +117,7 @@ export const getProducts = async (req, res) => {
       categoryId: row.CATEGORYID,
       sellerId: row.SELLERID,
       firstImageUrl: row.IMAGEURL,
+      averageRating: row.AVERAGERATING
     }));
 
     res.json({
@@ -117,11 +138,11 @@ export const getSellerProducts = async (req, res) => {
   let conn;
   try {
     const sellerId = req.user.USERID;
-   console.log(req.user);
-   
+    console.log(req.user);
+
     conn = await connectDB();
-const result = await conn.execute(
-  `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
+    const result = await conn.execute(
+      `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
           i.IMAGEURL
    FROM PRODUCT p
    LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
@@ -132,11 +153,11 @@ const result = await conn.execute(
      )
    LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
    WHERE p.SELLERID = :sellerId`,
-  [sellerId],
-  { outFormat: oracledb.OUT_FORMAT_OBJECT }
-);
+      [sellerId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
 
-    const products = result.rows.map(row => ({
+    const products = result.rows.map((row) => ({
       productId: row.PRODUCTID,
       name: row.NAME,
       description: row.DESCRIPTION,
@@ -144,7 +165,8 @@ const result = await conn.execute(
       quantity: row.QUANTITY,
       categoryId: row.CATEGORYID,
       sellerId: row.SELLERID,
-      firstImageUrl: row.IMAGEURL
+      firstImageUrl: row.IMAGEURL,
+      averageRating: row.AVERAGERATING,
     }));
 
     res.json(products);
@@ -156,7 +178,6 @@ const result = await conn.execute(
   }
 };
 
-
 export const getProduct = async (req, res) => {
   let conn;
   try {
@@ -164,8 +185,8 @@ export const getProduct = async (req, res) => {
     conn = await connectDB();
 
     const result = await conn.execute(
-      `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
-          p.AVERAGERATING,i.IMAGEURL, s.STORENAME, s.STOREDESCRIPTION
+      `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID, c.ROOTCATEGORYID,
+          p.AVERAGERATING, i.IMAGEURL, s.STORENAME, s.STOREDESCRIPTION
       FROM PRODUCT p
       LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
       AND pi.IMAGEID = (
@@ -174,6 +195,7 @@ export const getProduct = async (req, res) => {
           WHERE PRODUCTID = p.PRODUCTID
       )
       LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
+      LEFT JOIN CATEGORY c ON p.CATEGORYID = c.CATEGORYID
       JOIN SELLER s ON s.SELLERID = p.SELLERID 
       WHERE p.PRODUCTID = :productId`,
       [Number(id)],
@@ -225,13 +247,13 @@ export const createProduct = async (req, res) => {
             { resource_type: "image" },
             (error, result) => {
               if (error) {
-                return reject(error); 
+                return reject(error);
               }
-              resolve(result); 
+              resolve(result);
             }
           );
 
-          cloudRes.end(file.buffer); 
+          cloudRes.end(file.buffer);
         });
 
         const imageRes = await conn.execute(
@@ -264,7 +286,6 @@ export const createProduct = async (req, res) => {
   }
 };
 
-
 export const deleteProduct = async (req, res) => {
   let conn;
   try {
@@ -273,7 +294,7 @@ export const deleteProduct = async (req, res) => {
 
     conn = await connectDB();
 
-       await conn.execute(
+    await conn.execute(
       `DELETE FROM ORDERITEM WHERE PRODUCTID = :id`,
       [Number(id)],
       { autoCommit: true }
@@ -294,10 +315,10 @@ export const deleteProduct = async (req, res) => {
       { autoCommit: true }
     );
 
-     for (const row of imageResult.rows) {
+    for (const row of imageResult.rows) {
       const imageId = row.IMAGEID;
 
-     const imageCountResult = await conn.execute(
+      const imageCountResult = await conn.execute(
         `SELECT COUNT(*) AS COUNT FROM PRODUCTIMAGE WHERE IMAGEID = :imageId`,
         [imageId],
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -305,7 +326,6 @@ export const deleteProduct = async (req, res) => {
 
       const imageCount = imageCountResult.rows[0].COUNT;
 
-      
       if (imageCount === 0) {
         await conn.execute(
           `DELETE FROM IMAGE WHERE IMAGEID = :imageId`,
@@ -319,7 +339,7 @@ export const deleteProduct = async (req, res) => {
       `DELETE FROM Product WHERE ProductID = :id AND SellerID = :sellerId`,
       {
         id: Number(id),
-        sellerId
+        sellerId,
       },
       { autoCommit: true }
     );
@@ -336,8 +356,6 @@ export const deleteProduct = async (req, res) => {
     if (conn) await conn.close();
   }
 };
-
-
 
 export const updateProduct = async (req, res) => {
   let conn;
@@ -363,7 +381,7 @@ export const updateProduct = async (req, res) => {
         quantity,
         categoryid,
         id: Number(id),
-        sellerId
+        sellerId,
       },
       { autoCommit: true }
     );
@@ -378,5 +396,63 @@ export const updateProduct = async (req, res) => {
     res.status(500).send("Database error");
   } finally {
     if (conn) await conn.close();
+  }
+};
+
+export const getProductAnalytics = async (req, res) => {
+  const productId = req.params.id;
+
+  if (isNaN(productId)) {
+    console.error("Invalid productId passed:", req.params.productId);
+    return res.status(400).json({ error: "Invalid product ID" });
+  }
+
+  let connection;
+
+  try {
+    connection = await connectDB();
+
+    const result = await connection.execute(
+      `
+      WITH price_history_ranked AS (
+  SELECT 
+    pph.ProductID,
+    pph.Price,
+    pph.ChangedOn,
+    po.OrderID,
+    po.OrderDate,
+    oi.Quantity,
+    ROW_NUMBER() OVER (
+      PARTITION BY po.OrderID, oi.ProductID
+      ORDER BY 
+        CASE WHEN pph.ChangedOn <= po.OrderDate THEN 0 ELSE 1 END,
+        pph.ChangedOn DESC NULLS LAST
+    ) AS rn
+  FROM ProductOrder po
+  JOIN OrderItem oi ON po.OrderID = oi.OrderID
+  LEFT JOIN ProductPriceHistory pph ON pph.ProductID = oi.ProductID
+  WHERE oi.ProductID = :productId
+    AND po.Status = 'Y'
+)
+SELECT 
+  TO_CHAR(OrderDate, 'YYYY-MM-DD') AS sale_date,
+  Price AS price_at_that_time,
+  SUM(Quantity) AS units_sold
+FROM price_history_ranked
+WHERE rn = 1
+GROUP BY TO_CHAR(OrderDate, 'YYYY-MM-DD'), Price
+ORDER BY sale_date
+
+      `,
+      [Number(productId)],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Analytics fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch analytics" });
+  } finally {
+    if (connection) await connection.close();
   }
 };

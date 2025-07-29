@@ -1,7 +1,6 @@
 import { connectDB } from "../db/dbconnect.js";
 import oracledb from "oracledb";
 
-
 export const getAllProducts = async (req, res) => {
   let conn;
   try {
@@ -21,15 +20,14 @@ export const getAllProducts = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-const products = result.rows.map(row => ({
-  PRODUCTID: row.PRODUCTID,
-  NAME: row.NAME,
-  PRICE: row.PRICE,
-  QUANTITY: row.QUANTITY,
-  IMAGEURL: row.IMAGEURL,
-  SELLERID: row.SELLERID
-}));
-
+    const products = result.rows.map((row) => ({
+      PRODUCTID: row.PRODUCTID,
+      NAME: row.NAME,
+      PRICE: row.PRICE,
+      QUANTITY: row.QUANTITY,
+      IMAGEURL: row.IMAGEURL,
+      SELLERID: row.SELLERID,
+    }));
 
     res.json(products);
   } catch (err) {
@@ -39,7 +37,6 @@ const products = result.rows.map(row => ({
     if (conn) await conn.close();
   }
 };
-
 
 export const adminDeleteProduct = async (req, res) => {
   let conn;
@@ -160,7 +157,7 @@ export const deleteSeller = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    const productIds = productResult.rows.map(row => row.PRODUCTID);
+    const productIds = productResult.rows.map((row) => row.PRODUCTID);
 
     // Step 2: Delete images associated with those products
     for (const productId of productIds) {
@@ -171,7 +168,7 @@ export const deleteSeller = async (req, res) => {
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
-      const imageIds = imageResult.rows.map(row => row.IMAGEID);
+      const imageIds = imageResult.rows.map((row) => row.IMAGEID);
 
       // Delete from PRODUCTIMAGE
       await conn.execute(
@@ -223,7 +220,9 @@ export const deleteSeller = async (req, res) => {
       return res.status(404).json({ error: "Seller not found" });
     }
 
-    res.json({ message: "Seller and all associated products deleted successfully." });
+    res.json({
+      message: "Seller and all associated products deleted successfully.",
+    });
   } catch (err) {
     console.error("Error deleting seller:", err);
     res.status(500).json({ error: "Database error" });
@@ -231,8 +230,6 @@ export const deleteSeller = async (req, res) => {
     if (conn) await conn.close();
   }
 };
-
-
 
 export const getTopOrderedProducts = async (req, res) => {
   let conn;
@@ -268,7 +265,6 @@ export const getTopOrderedProducts = async (req, res) => {
   }
 };
 
-
 export const getOrderHistory = async (req, res) => {
   let conn;
   try {
@@ -284,16 +280,18 @@ export const getOrderHistory = async (req, res) => {
       ORDER BY o.ORDERDATE DESC, o.ORDERID, p.NAME
     `;
 
-    const result = await conn.execute(query, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+    const result = await conn.execute(query, [], {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
 
     const ordersMap = new Map();
     let totalTransactionAmount = 0;
-      let totalTransactionAmountToday = 0;
+    let totalTransactionAmountToday = 0;
     for (const row of result.rows) {
       const {
         ORDERID,
         ORDERDATE,
-        TOTAL,  
+        TOTAL,
         CUSTOMERID,
         PRODUCT_NAME,
         QUANTITY,
@@ -301,46 +299,47 @@ export const getOrderHistory = async (req, res) => {
         ITEM_TOTAL,
       } = row;
 
-       const orderDateStr = new Date(ORDERDATE).toISOString().split('T')[0];
-      const todayStr = new Date().toISOString().split('T')[0];
+      const orderDateStr = new Date(ORDERDATE).toISOString().split("T")[0];
+      const todayStr = new Date().toISOString().split("T")[0];
       if (!ordersMap.has(ORDERID)) {
         ordersMap.set(ORDERID, {
           orderId: ORDERID,
           orderDate: ORDERDATE,
           customerId: CUSTOMERID,
           items: [],
-          totalTransactionAmount: Number(TOTAL), 
-          totalOrderAmount: Number(TOTAL), 
+          totalTransactionAmount: Number(TOTAL),
+          totalOrderAmount: Number(TOTAL),
         });
-        if(orderDateStr===todayStr) totalTransactionAmountToday+=TOTAL;
+        if (orderDateStr === todayStr) totalTransactionAmountToday += TOTAL;
         totalTransactionAmount += TOTAL;
       }
 
       const order = ordersMap.get(ORDERID);
 
-      
       order.items.push({
         productName: PRODUCT_NAME,
         quantity: QUANTITY,
         price: Number(ITEM_PRICE),
         itemTotal: Number(ITEM_TOTAL),
       });
-       
     }
 
-    
     const orderHistory = Array.from(ordersMap.values());
-  
-   
-    res.json({ totalTransactionAmount,totalTransactionAmountToday, orderHistory });
+
+    res.json({
+      totalTransactionAmount,
+      totalTransactionAmountToday,
+      orderHistory,
+    });
   } catch (err) {
     console.error("Error fetching order history:", err);
-    res.status(500).json({ error: "Database error while fetching order history" });
+    res
+      .status(500)
+      .json({ error: "Database error while fetching order history" });
   } finally {
     if (conn) await conn.close();
   }
 };
-
 
 export const getTopSellers = async (req, res) => {
   let conn;
@@ -357,18 +356,239 @@ export const getTopSellers = async (req, res) => {
       FETCH FIRST 3 ROWS ONLY
     `;
 
-    const result = await conn.execute(query, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+    const result = await conn.execute(query, [], {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching top sellers:", err);
-    res.status(500).json({ error: "Database error while fetching top sellers" });
+    res
+      .status(500)
+      .json({ error: "Database error while fetching top sellers" });
   } finally {
     if (conn) await conn.close();
   }
 };
 
+export const getVatByCategory = async (req, res) => {
+  const categoryId = Number(req.params.categoryid);
+  if (isNaN(categoryId)) {
+    return res.status(400).json({ error: "Invalid categoryId" });
+  }
 
+  let connection;
 
+  try {
+    connection = await connectDB();
 
+    const result = await connection.execute(
+      `SELECT TAXID, CategoryID, Rate,
+              TO_CHAR(Effective_From, 'YYYY-MM-DD') AS Effective_From,
+              TO_CHAR(Effective_To, 'YYYY-MM-DD') AS Effective_To
+       FROM TaxRates
+       WHERE CategoryID = :categoryId
+       ORDER BY Effective_From DESC`,
+      { categoryId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    console.log("Fetched VATs from DB:", result.rows);
 
+    const vats = result.rows.map((row) => ({
+      taxId: row.TAXID,
+      categoryId: row.CATEGORYID,
+      rate: row.RATE,
+      effectiveFrom: row.EFFECTIVE_FROM,
+      effectiveTo: row.EFFECTIVE_TO,
+    }));
 
+    res.json(vats);
+  } catch (err) {
+    console.error("Error fetching all VATs:", err);
+    res.status(500).json({ error: "Failed to fetch VATs" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+};
+
+export const addOrUpdateVat = async (req, res) => {
+  const { categoryId, rate, effectiveFrom, effectiveTo } = req.body;
+
+  if (!categoryId || rate === undefined || !effectiveFrom) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  let connection;
+
+  try {
+    connection = await connectDB();
+
+    const insertQuery = effectiveTo
+      ? `INSERT INTO TaxRates (CategoryID, Rate, Effective_From, Effective_To)
+         VALUES (:categoryId, :rate, TO_DATE(:effectiveFrom, 'YYYY-MM-DD'), TO_DATE(:effectiveTo, 'YYYY-MM-DD'))`
+      : `INSERT INTO TaxRates (CategoryID, Rate, Effective_From, Effective_To)
+         VALUES (:categoryId, :rate, TO_DATE(:effectiveFrom, 'YYYY-MM-DD'), NULL)`;
+
+    const bindParams = effectiveTo
+      ? { categoryId, rate, effectiveFrom, effectiveTo }
+      : { categoryId, rate, effectiveFrom };
+
+    await connection.execute(insertQuery, bindParams, { autoCommit: true });
+
+    res.status(201).json({ message: "VAT rate successfully set." });
+  } catch (err) {
+    console.error("Error adding/updating VAT:", err);
+    res.status(500).json({ error: "Failed to save VAT" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+};
+
+export const getActiveVat = async (req, res) => {
+  const categoryId = Number(req.params.categoryid);
+  if (isNaN(categoryId)) {
+    return res.status(400).json({ error: "Invalid categoryId" });
+  }
+
+  let connection;
+
+  try {
+    connection = await connectDB();
+
+    const result = await connection.execute(
+      `SELECT TAXID, CategoryID, Rate,
+              TO_CHAR(Effective_From, 'YYYY-MM-DD') AS Effective_From,
+              TO_CHAR(Effective_To, 'YYYY-MM-DD') AS Effective_To
+       FROM TaxRates
+       WHERE CategoryID = :categoryId
+       AND (Effective_To IS NULL OR Effective_To >= SYSDATE)`,
+      { categoryId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    console.log("Fetched VATs from DB:", result.rows);
+
+    const vats = {
+      taxId: result.rows[0].TAXID,
+      categoryId: result.rows[0].CATEGORYID,
+      rate: result.rows[0].RATE,
+      effectiveFrom: result.rows[0].EFFECTIVE_FROM,
+      effectiveTo: result.rows[0].EFFECTIVE_TO,
+    };
+
+    res.json(vats);
+  } catch (err) {
+    console.error("Error fetching all VATs:", err);
+    res.status(500).json({ error: "Failed to fetch VATs" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+};
+
+export const getPendingOrders = async (req, res) => {
+  let connection;
+  try {
+    connection = await connectDB();
+
+    const result = await connection.execute(
+      `SELECT ORDERID, CUSTOMERID, ORDERDATE, SUBTOTAL, TOTAL, STATUS
+       FROM PRODUCTORDER
+       WHERE TRIM(UPPER(STATUS)) = 'P'`,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching pending orders:", err);
+    res.status(500).json({ error: "Failed to fetch pending orders" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+};
+
+export const acceptOrder = async (req, res) => {
+  const orderId = req.params.id;
+  let connection;
+
+  try {
+    connection = await connectDB();
+
+    const result = await connection.execute(
+      `UPDATE PRODUCTORDER SET STATUS = 'Y' WHERE ORDERID = :orderId`,
+      { orderId },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ message: "Order accepted successfully" });
+  } catch (err) {
+    console.error("Error accepting order:", err);
+    res.status(500).json({ error: "Failed to accept order" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+}
+
+export const declineOrder = async (req, res) => {
+  const orderId = req.params.id;
+  let connection;
+
+  try {
+    connection = await connectDB();
+
+    const result = await connection.execute(
+      `UPDATE PRODUCTORDER SET STATUS = 'F' WHERE ORDERID = :orderId`,
+      { orderId },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ message: "Order declined successfully" });
+  } catch (err) {
+    console.error("Error declining order:", err);
+    res.status(500).json({ error: "Failed to decline order" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+}

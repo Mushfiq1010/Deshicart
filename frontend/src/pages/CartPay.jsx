@@ -1,27 +1,37 @@
 import React, { useEffect, useState } from "react";
 import API from "../Api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const CartPay = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [totalAmount, setTotalAmount] = useState(0);
-  const [cartItems, setCartItems] = useState([]);
   const [transactionRequests, setTransactionRequests] = useState([]);
-  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const [timeLeft, setTimeLeft] = useState(180);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const apiKey = 'super-secret-deshicart-to-wallet-key';
+  const apiKey = "super-secret-deshicart-to-wallet-key";
+
+  const passedCartItems = location.state?.cartItems || [];
+  const passedVatTotal = location.state?.vatTotal || 0;
+
+  const [cartItems, setCartItems] = useState([]);
+  const [vatTotal, setVatTotal] = useState(0);
+
+  const get = (item, key) =>
+    item[key] ?? item[key.toUpperCase()] ?? item[key.toLowerCase()] ?? 0;
 
   useEffect(() => {
-    fetchCartItems();
+    //if (passedCartItems.length > 0) {
+    setCartItems(passedCartItems);
+    setVatTotal(passedVatTotal);
+    processCartItems(passedCartItems);
+    //} else {
+    // fetchCartAndProcess();
+    //}
   }, []);
 
-  useEffect(() => {
-    if (cartItems.length > 0) processCartItems();
-  }, [cartItems]);
-
-  // Countdown timer with auto timeout
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -34,19 +44,21 @@ const CartPay = () => {
         return prev - 1;
       });
     }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 
-  const fetchCartItems = async () => {
+  /* const fetchCartAndProcess = async () => {
     try {
       const res = await API.get("/customer/getcart");
-      if (res.data.cart) setCartItems(res.data.cart);
-      else if (Array.isArray(res.data)) setCartItems(res.data);
+      const rawCart = res.data.cart || res.data || [];
+      setCartItems(rawCart);
+      await processCartItems(rawCart);
     } catch (err) {
-      alert("Failed to load cart items. Please try again later.");
+      alert("Failed to load cart. Redirecting...");
       navigate("/customer/products");
     }
-  };
+  }; */
 
   const getProduct = async (id) => {
     try {
@@ -66,57 +78,65 @@ const CartPay = () => {
     }
   };
 
-  const processCartItems = async () => {
+  const processCartItems = async (items) => {
     let total = 0;
+    let totalVat = 0;
+
     const list = await Promise.all(
-      cartItems.map(async (item) => {
-        const product = await getProduct(item.PRODUCTID);
-        if (!product) return null;
+      items.map(async (item) => {
+        const sellerWallet = item.SELLERWALLETID;
 
-        const sellerWallet = await getSellerWallet(product.SELLERID);
-        if (!sellerWallet) return null;
+        const price = get(item, "price");
+        const quantity = get(item, "quantity");
 
-        const amount = product.PRICE * item.QUANTITY;
+        let vatRate = item.vatRate || 0;
+
+        const vatAmount = (price * quantity * vatRate) / 100;
+        const amount = price * quantity;
+
         total += amount;
+        totalVat += vatAmount;
 
         return {
           amount,
+          vatAmount,
           sellerWallet,
-          productId: item.PRODUCTID,
-          quantity: item.QUANTITY,
-          price: product.PRICE,
-          name: product.NAME,
         };
       })
     );
 
-    const validList = list.filter(item => item !== null);
-    if (validList.length === 0) {
-      alert("Cart contains invalid products or sellers.");
+    const validTransactions = list.filter(Boolean);
+
+    if (validTransactions.length === 0) {
+      alert("Invalid cart contents. Please try again.");
       navigate("/customer/products");
       return;
     }
 
-    setTransactionRequests(validList);
-    setTotalAmount(total);
+    setTransactionRequests(validTransactions);
+    setTotalAmount(total + totalVat); 
+    setVatTotal(totalVat);
   };
 
   const handlePay = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5050/api/wallet/checkout-cart", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          username,
-          password,
-          transactions: transactionRequests
-        })
-      });
+      const res = await fetch(
+        "http://localhost:5050/api/wallet/checkout-cart",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            username,
+            password,
+            transactions: transactionRequests,
+          }),
+        }
+      );
 
       const data = await res.json();
       if (!data.success) {
@@ -125,14 +145,19 @@ const CartPay = () => {
         return;
       }
 
-      const orderRes = await API.post("/customer/placeorder");
+      const orderRes = await API.post("/customer/placeorder", {
+        cartItems,
+        vatTotal,
+        isCart: true,
+      });
+
       if (!orderRes.data.success) {
         alert("Order could not be created.");
         navigate("/customer/products");
         return;
       }
 
-      alert("Order placed successfully!");
+      alert("✅ Order placed successfully!");
       navigate("/customer/products");
     } catch (err) {
       console.error("Checkout failed", err);
@@ -148,10 +173,14 @@ const CartPay = () => {
           Confirm Payment
         </h2>
         <p className="text-center text-gray-600 mb-2">
-          You're about to pay <span className="font-semibold text-indigo-600">৳{totalAmount}</span>
+          You're about to pay{" "}
+          <span className="font-semibold text-indigo-600">
+            ৳{totalAmount.toFixed(2)}
+          </span>
         </p>
         <p className="text-center text-red-500 font-medium mb-6">
-          Session expires in: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+          Session expires in: {Math.floor(timeLeft / 60)}:
+          {(timeLeft % 60).toString().padStart(2, "0")}
         </p>
         <form onSubmit={handlePay} className="space-y-5">
           <input
@@ -170,10 +199,7 @@ const CartPay = () => {
             className="input"
             required
           />
-          <button
-            type="submit"
-            className="btn bg-green-600 hover:bg-green-700"
-          >
+          <button type="submit" className="btn bg-green-600 hover:bg-green-700">
             Pay Now
           </button>
         </form>

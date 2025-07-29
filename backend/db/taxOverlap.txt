@@ -1,0 +1,15 @@
+CREATE OR REPLACE TRIGGER ADMIN.TRG_REPLACE_OVERLAPPING_VAT
+BEFORE INSERT OR UPDATE ON TaxRates
+FOR EACH ROW
+DECLARE
+  v_new_from DATE := :NEW.Effective_From;
+  v_new_to   DATE := NVL(:NEW.Effective_To, TO_DATE('9999-12-31', 'YYYY-MM-DD'));
+BEGIN
+  DELETE FROM TaxRates
+  WHERE CategoryID = :NEW.CategoryID
+    AND (
+      NVL(Effective_To, TO_DATE('9999-12-31', 'YYYY-MM-DD')) >= v_new_from
+      AND NVL(Effective_From, TO_DATE('0001-01-01', 'YYYY-MM-DD')) <= v_new_to
+    );
+END;
+/

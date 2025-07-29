@@ -33,6 +33,8 @@ function ProductList() {
     }
   };
 
+  const handleAnalytics = (id) => navigate(`/seller/products/analytics/${id}`);
+
   return (
     <div className="bg-gradient-to-br from-indigo-50 to-sky-50 min-h-screen">
       <Navbar userType="seller"/>
@@ -71,6 +73,12 @@ function ProductList() {
                   className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                 >
                   Delete
+                </button>
+                <button
+                  onClick={() => handleAnalytics(product.productId)}
+                  className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Analytics
                 </button>
               </div>
             </div>

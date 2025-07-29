@@ -11,7 +11,7 @@ const Login = ({ onLogin }) => {
     try {
       const res = await API.post("/auth/login", { username, password });
       localStorage.setItem("walletToken", res.data.token);
-      onLogin(); 
+      onLogin();
       navigate("/");
     } catch (err) {
       alert("Login failed");
@@ -21,15 +21,17 @@ const Login = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login to Wallet</h2>
-        
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Login to Wallet
+        </h2>
+
         <input
           type="text"
           placeholder="Username"
           className="w-full px-4 py-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           onChange={(e) => setUsername(e.target.value)}
         />
-        
+
         <input
           type="password"
           placeholder="Password"
@@ -43,6 +45,18 @@ const Login = ({ onLogin }) => {
         >
           Login
         </button>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don’t have an account?{" "}
+            <button
+              onClick={() => navigate("/register")}
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Register now
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

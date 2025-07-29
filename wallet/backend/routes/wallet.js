@@ -49,7 +49,7 @@ router.post('/checkout-cart', async (req, res) => {
     const buyerId = user.ID;
 
     connection = await db.getConnection();
-    await connection.execute(`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+    //await connection.execute(`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
 
     const balanceResult = await connection.execute(
       `SELECT balance FROM wallets WHERE username = :username FOR UPDATE`,
@@ -61,10 +61,10 @@ router.post('/checkout-cart', async (req, res) => {
     }
 
     let balance = balanceResult.rows[0].BALANCE;
-    let totalAmount = 0;
+    let globalTotal = 0;
 
     for (const trx of transactions) {
-      const { amount, sellerWallet } = trx;
+      const { amount, sellerWallet, vatAmount } = trx;
 
       const seller = await findByUsername(sellerWallet);
       if (!seller) {
@@ -75,9 +75,10 @@ router.post('/checkout-cart', async (req, res) => {
         throw new Error('Insufficient balance');
       }
 
+      const totalAmount = amount + vatAmount
       const withdrawResult = await connection.execute(
         `UPDATE wallets SET balance = balance - :amount WHERE username = :username`,
-        { amount, username }
+        { amount:totalAmount, username }
       );
       if (withdrawResult.rowsAffected === 0) throw new Error('Failed to withdraw');
 
@@ -87,17 +88,27 @@ router.post('/checkout-cart', async (req, res) => {
       );
       if (depositResult.rowsAffected === 0) throw new Error('Failed to deposit');
 
+      const taxDeposit = await connection.execute(
+        `UPDATE wallets SET balance = balance + :amount WHERE username = :receiver`,
+        { amount:vatAmount, receiver: "GOB" }
+      );
+      if (taxDeposit.rowsAffected === 0) throw new Error('Failed to deposit');
+
       await connection.execute(
         `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'withdraw', :amount)`,
-        { id: buyerId, amount }
+        { id: buyerId, amount:totalAmount }
       );
       await connection.execute(
         `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'deposit', :amount)`,
         { id: seller.ID, amount }
       );
+      await connection.execute(
+        `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'deposit', :amount)`,
+        { id: 61, amount:vatAmount } // Assuming 61 is the GOB wallet ID
+      );
 
-      balance -= amount;
-      totalAmount += amount;
+      balance -= amount+vatAmount;
+      globalTotal += amount + vatAmount;
     }
 
     await connection.commit();
@@ -105,7 +116,7 @@ router.post('/checkout-cart', async (req, res) => {
     res.json({
       success: true,
       message: 'All payments processed successfully',
-      totalPaid: totalAmount
+      totalPaid: globalTotal
     });
   } catch (error) {
     if (connection) await connection.rollback();
