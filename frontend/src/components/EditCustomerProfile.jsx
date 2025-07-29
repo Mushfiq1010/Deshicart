@@ -74,7 +74,7 @@ const EditCustomerProfile = () => {
   return (
     <div className="min-h-screen bg-indigo-100 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8 space-y-8">
-        <h2 className="text-3xl font-bold text-center text-indigo-600">Edit Seller Profile</h2>
+        <h2 className="text-3xl font-bold text-center text-indigo-600">Edit Customer Profile</h2>
 
         {/* Profile Image Section */}
         <div className="flex justify-center">

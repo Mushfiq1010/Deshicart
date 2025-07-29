@@ -1,6 +1,6 @@
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import SellerSignup from "./pages/SellerSignup";
+import SellerSignup from "./pages/sellerSignup";
 import CustomerSignup from "./pages/customerSignup";
 import CustomerLogin from "./pages/CustomerLogin";
 import SellerLogin from "./pages/SellerLogin";
