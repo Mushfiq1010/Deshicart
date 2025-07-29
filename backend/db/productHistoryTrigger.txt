@@ -1,9 +1,25 @@
-CREATE OR REPLACE TRIGGER trg_price_update_history
-AFTER UPDATE OF Price ON Product
+CREATE OR REPLACE EDITIONABLE TRIGGER ADMIN.TRG_PRICE_UPDATE_HISTORY
+AFTER INSERT OR UPDATE OF Price ON Product
 FOR EACH ROW
-WHEN (OLD.Price != NEW.Price)
+DECLARE
+  v_now DATE := TRUNC(SYSDATE);
 BEGIN
-  INSERT INTO ProductPriceHistory (ProductID, Price, ChangedOn)
-  VALUES (:NEW.ProductID, :NEW.Price, SYSDATE);
+  -- Case 1: Product is newly inserted → add initial price history
+  IF INSERTING THEN
+    INSERT INTO ProductPriceHistory (ProductID, Price, Price_From, Price_To)
+    VALUES (:NEW.ProductID, :NEW.Price, v_now, NULL);
+
+  -- Case 2: Price is updated and changed → close old price, add new one
+  ELSIF UPDATING AND :OLD.Price != :NEW.Price THEN
+    -- Close previous open price period
+    UPDATE ProductPriceHistory
+    SET Price_To = v_now - 1
+    WHERE ProductID = :NEW.ProductID AND Price_To IS NULL;
+
+    -- Add new price record starting today
+    INSERT INTO ProductPriceHistory (ProductID, Price, Price_From, Price_To)
+    VALUES (:NEW.ProductID, :NEW.Price, v_now, NULL);
+  END IF;
 END;
 /
+ALTER TRIGGER ADMIN.TRG_PRICE_UPDATE_HISTORY ENABLE;

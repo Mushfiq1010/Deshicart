@@ -30,7 +30,7 @@ const Navbar = ({ userType }) => {
   };
 
   const handleSearch = () => {
-    navigate(`/customer/products?name=${encodeURIComponent(searchText)}`);
+    navigate(`/${userType}/products?name=${encodeURIComponent(searchText)}`);
   };
 
   return (
@@ -60,23 +60,29 @@ const Navbar = ({ userType }) => {
 
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate("/customer/orders")}
+          onClick={() => navigate(`/${userType}/orders`)}
           className="hover:underline"
         >
           Orders
         </button>
-        <button
-          onClick={() => navigate("/customer/cart")}
-          className="hover:underline"
-        >
-          Cart
-        </button>
-        <button
-          onClick={() => navigate("/customer/wishlist")}
-          className="hover:underline"
-        >
-          Wishlist
-        </button>
+
+        {userType === "customer" && (
+          <>
+            <button
+              onClick={() => navigate("/customer/cart")}
+              className="hover:underline"
+            >
+              Cart
+            </button>
+            <button
+              onClick={() => navigate("/customer/wishlist")}
+              className="hover:underline"
+            >
+              Wishlist
+            </button>
+          </>
+        )}
+
         {profile && (
           <div
             onClick={() => navigate(`/${userType}/edit-profile`)}
@@ -90,6 +96,7 @@ const Navbar = ({ userType }) => {
             <span className="font-medium">{profile.NAME}</span>
           </div>
         )}
+
         <button
           onClick={handleLogout}
           className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white"

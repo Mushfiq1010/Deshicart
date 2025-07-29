@@ -70,7 +70,8 @@ export const getProducts = async (req, res) => {
     }
 
     let order = "";
-    if (name) order += ` ORDER BY MATCH_SCORE DESC, p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
+    if (name)
+      order += ` ORDER BY MATCH_SCORE DESC, p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
     else order += ` ORDER BY p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
 
     const countResult = await conn.execute(
@@ -117,7 +118,7 @@ export const getProducts = async (req, res) => {
       categoryId: row.CATEGORYID,
       sellerId: row.SELLERID,
       firstImageUrl: row.IMAGEURL,
-      averageRating: row.AVERAGERATING
+      averageRating: row.AVERAGERATING,
     }));
 
     res.json({
@@ -140,22 +141,111 @@ export const getSellerProducts = async (req, res) => {
     const sellerId = req.user.USERID;
     console.log(req.user);
 
+    const {
+      name,
+      minPrice,
+      maxPrice,
+      category,
+      page = 1,
+      limit = 12,
+    } = req.query;
+
     conn = await connectDB();
-    const result = await conn.execute(
-      `SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, p.CATEGORYID, p.SELLERID,
-          i.IMAGEURL
-   FROM PRODUCT p
-   LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
-     AND pi.IMAGEID = (
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    let baseQuery = `
+      FROM PRODUCT p
+      LEFT JOIN PRODUCTIMAGE pi ON p.PRODUCTID = pi.PRODUCTID
+        AND pi.IMAGEID = (
           SELECT MIN(IMAGEID)
           FROM PRODUCTIMAGE
           WHERE PRODUCTID = p.PRODUCTID
-     )
-   LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
-   WHERE p.SELLERID = :sellerId`,
-      [sellerId],
+        )
+      LEFT JOIN IMAGE i ON pi.IMAGEID = i.IMAGEID
+      WHERE 1 = 1 AND SELLERID = :sellerId
+    `;
+
+    const params = {};
+    params.sellerId = sellerId;
+
+    if (name && name.trim()) {
+      params.name = `%${name.toLowerCase().trim()}%`;
+      baseQuery += ` AND LOWER(p.NAME) LIKE :name`;
+    }
+
+    if (minPrice) {
+      baseQuery += ` AND p.PRICE >= :minPrice`;
+      params.minPrice = Number(minPrice);
+    }
+
+    if (maxPrice) {
+      baseQuery += ` AND p.PRICE <= :maxPrice`;
+      params.maxPrice = Number(maxPrice);
+    }
+
+    if (category) {
+      const categoryResult = await conn.execute(
+        `SELECT CATEGORYID FROM CATEGORY
+     START WITH CATEGORYID = :category
+     CONNECT BY PRIOR CATEGORYID = PARENTID`,
+        { category: Number(category) },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const categoryIds = categoryResult.rows.map((row) => row.CATEGORYID);
+      if (categoryIds.length > 0) {
+        const placeholders = categoryIds
+          .map((_, idx) => `:cat${idx}`)
+          .join(", ");
+        baseQuery += ` AND p.CATEGORYID IN (${placeholders})`;
+        categoryIds.forEach((id, idx) => {
+          params[`cat${idx}`] = id;
+        });
+      }
+    }
+
+    let order = "";
+    if (name)
+      order += ` ORDER BY MATCH_SCORE DESC, p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
+    else order += ` ORDER BY p.AVERAGERATING DESC NULLS LAST, p.NAME ASC`;
+
+    const countResult = await conn.execute(
+      `SELECT COUNT(*) AS TOTAL ${baseQuery}`,
+      params,
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+    const totalCount = countResult.rows[0].TOTAL;
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    if (name) {
+      baseQuery =
+        ` ,CASE
+         WHEN :name IS NULL THEN 0
+         ELSE
+           LENGTH(:name)/ LENGTH(p.NAME)
+        END AS MATCH_SCORE
+        ` + baseQuery;
+    }
+    const paginatedQuery = `
+      SELECT p.PRODUCTID, p.NAME, p.DESCRIPTION, p.PRICE, p.QUANTITY, 
+       p.CATEGORYID, p.SELLERID, i.IMAGEURL, p.AVERAGERATING
+      ${baseQuery}
+      ${order}
+      OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
+    `;
+
+    const productParams = {
+      ...params,
+      offset,
+      limit: limitNum,
+    };
+
+    const result = await conn.execute(paginatedQuery, productParams, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
 
     const products = result.rows.map((row) => ({
       productId: row.PRODUCTID,
@@ -169,10 +259,15 @@ export const getSellerProducts = async (req, res) => {
       averageRating: row.AVERAGERATING,
     }));
 
-    res.json(products);
+    res.json({
+      products,
+      totalPages,
+      currentPage: pageNum,
+      totalCount,
+    });
   } catch (err) {
-    console.error("Error in getSellerProducts:", err);
-    res.status(500).send("Database error");
+    console.error("Error in getProducts:", err);
+    res.status(500).json({ error: "Database error" });
   } finally {
     if (conn) await conn.close();
   }
@@ -412,41 +507,79 @@ export const getProductAnalytics = async (req, res) => {
   try {
     connection = await connectDB();
 
-    const result = await connection.execute(
-      `
-      WITH price_history_ranked AS (
+    const today = new Date();
+    const endDate = today.toLocaleDateString("en-CA"); // 'YYYY-MM-DD'
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const startDate = oneMonthAgo.toLocaleDateString("en-CA"); // 'YYYY-MM-DD'
+    const query = `
+   WITH last_month_days AS (
+  SELECT TO_DATE(:startDate, 'YYYY-MM-DD') + LEVEL - 1 AS sale_date
+  FROM dual
+  CONNECT BY LEVEL <= TO_DATE(:endDate, 'YYYY-MM-DD') - TO_DATE(:startDate, 'YYYY-MM-DD') + 1
+),
+all_price_ranges AS (
   SELECT 
-    pph.ProductID,
-    pph.Price,
-    pph.ChangedOn,
-    po.OrderID,
-    po.OrderDate,
-    oi.Quantity,
-    ROW_NUMBER() OVER (
-      PARTITION BY po.OrderID, oi.ProductID
-      ORDER BY 
-        CASE WHEN pph.ChangedOn <= po.OrderDate THEN 0 ELSE 1 END,
-        pph.ChangedOn DESC NULLS LAST
-    ) AS rn
+    ProductID,
+    Price,
+    TRUNC(Price_From) AS Price_From,
+    TRUNC(NVL(Price_To, SYSDATE + 1)) AS Price_To  -- handle NULL
+  FROM ProductPriceHistory
+  WHERE ProductID = :productId
+
+  UNION ALL
+
+  SELECT 
+    ProductID,
+    Price,
+    TRUNC(CreatedOn) AS Price_From,
+    TRUNC(SYSDATE + 1) AS Price_To
+  FROM Product
+  WHERE ProductID = :productId
+),
+price_on_day AS (
+  SELECT 
+    d.sale_date,
+    pr.Price
+  FROM last_month_days d
+  JOIN all_price_ranges pr
+    ON d.sale_date BETWEEN TRUNC(pr.Price_From) AND TRUNC(NVL(pr.Price_To, SYSDATE))
+)
+,
+sales_on_day AS (
+  SELECT 
+    TRUNC(po.OrderDate) AS sale_date,
+    SUM(oi.Quantity) AS units_sold
   FROM ProductOrder po
   JOIN OrderItem oi ON po.OrderID = oi.OrderID
-  LEFT JOIN ProductPriceHistory pph ON pph.ProductID = oi.ProductID
-  WHERE oi.ProductID = :productId
-    AND po.Status = 'Y'
+  WHERE po.Status = 'Y'
+    AND oi.ProductID = :productId
+    AND TRUNC(po.OrderDate) BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+  GROUP BY TRUNC(po.OrderDate)
 )
 SELECT 
-  TO_CHAR(OrderDate, 'YYYY-MM-DD') AS sale_date,
-  Price AS price_at_that_time,
-  SUM(Quantity) AS units_sold
-FROM price_history_ranked
-WHERE rn = 1
-GROUP BY TO_CHAR(OrderDate, 'YYYY-MM-DD'), Price
-ORDER BY sale_date
+  TO_CHAR(d.sale_date, 'YYYY-MM-DD') AS SALE_DATE,
+  COALESCE(s.units_sold, 0) AS UNITS_SOLD,
+  p.Price AS PRICE_AT_THAT_TIME
+FROM last_month_days d
+LEFT JOIN sales_on_day s
+  ON d.sale_date = s.sale_date
+LEFT JOIN price_on_day p
+  ON d.sale_date = p.sale_date
+ORDER BY d.sale_date
 
-      `,
-      [Number(productId)],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
+
+  `;
+
+    const binds = {
+      productId: Number(productId),
+      startDate,
+      endDate,
+    };
+
+    const result = await connection.execute(query, binds, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
 
     res.json(result.rows);
   } catch (err) {

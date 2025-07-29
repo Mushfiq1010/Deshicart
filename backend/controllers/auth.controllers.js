@@ -412,7 +412,7 @@ export const updateSellerProfile = async (req, res) => {
     conn = await connectDB();
 
     const existing = await conn.execute(
-      `SELECT su.NAME, su.PHONE, su.PROFILEIMAGE, s.STORENAME, s.STOREDESCRIPTION, s.WALLETID
+      `SELECT su.NAME, su.PHONE, su.PROFILEIMAGE, s.STORENAME, s.STOREDESCRIPTION, s.WALLETUSER
        FROM SERVICEUSER su JOIN SELLER s ON su.USERID = s.SELLERID
        WHERE su.USERID = :sellerId`,
       { sellerId },
@@ -425,9 +425,8 @@ export const updateSellerProfile = async (req, res) => {
 
     const old = existing.rows[0];
 
-    let newWalletId = old.WALLETID;
 
-    // 🔐 Step 1: Authenticate wallet if username & password are provided
+    
     if (walletUsername && walletPassword) {
       try {
         const walletRes = await fetch("http://localhost:5050/api/auth/authenticate", {
@@ -444,15 +443,17 @@ export const updateSellerProfile = async (req, res) => {
         if (!walletData.success) {
           return res.status(400).json({ error: "Wallet credentials are incorrect!" });
         }
-
-        newWalletId = walletData.walletUserId;
+        else{
+          await conn.execute(
+            `UPDATE SELLER SET WALLETUSER = :walletUsername WHERE SELLERID = :sellerId`,
+            {walletUsername, sellerId});
+        }
       } catch (err) {
         console.error("Wallet auth failed:", err);
         return res.status(500).json({ error: "Wallet authentication failed" });
       }
     }
 
-    // 🔄 Step 2: Update SERVICEUSER
     await conn.execute(
       `UPDATE SERVICEUSER
        SET NAME = :name,
@@ -465,18 +466,15 @@ export const updateSellerProfile = async (req, res) => {
       }
     );
 
-    // 🔄 Step 3: Update SELLER (including WALLETID)
     await conn.execute(
       `UPDATE SELLER
        SET STORENAME = :storename,
-           STOREDESCRIPTION = :description,
-           WALLETID = :walletId
+           STOREDESCRIPTION = :description
        WHERE SELLERID = :sellerId`,
       {
         storename: storename || old.STORENAME,
         description: description || old.STOREDESCRIPTION,
-        walletId: newWalletId,
-        sellerId,
+        sellerId
       }
     );
 

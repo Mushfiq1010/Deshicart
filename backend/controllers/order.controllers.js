@@ -91,3 +91,52 @@ export const getAllOrders = async (req, res) => {
     }
   }
 };
+
+export const getSellerOrderHistory = async (req, res) => {
+  const sellerId = req.user.USERID;
+  let connection;
+
+  try {
+    connection = await connectDB();
+
+    const query = `
+      WITH SellerOrders AS (
+        SELECT 
+          po.OrderID,
+          po.OrderDate,
+          po.Status,
+          oi.ProductID,
+          p.Name AS ProductName,
+          oi.Quantity,
+          oi.Price,
+          oi.Total
+        FROM ProductOrder po
+        JOIN OrderItem oi ON po.OrderID = oi.OrderID
+        JOIN Product p ON oi.ProductID = p.ProductID
+        WHERE p.SellerID = :sellerId
+          AND po.Status = 'Y'
+      )
+      SELECT 
+        OrderID,
+        TO_CHAR(OrderDate, 'YYYY-MM-DD') AS OrderDate,
+        ProductID,
+        ProductName,
+        Quantity,
+        Price,
+        Total
+      FROM SellerOrders
+      ORDER BY OrderDate DESC
+    `;
+
+    const result = await connection.execute(query, { sellerId }, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Order history fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch seller order history" });
+  } finally {
+    if (connection) await connection.close();
+  }
+};

@@ -103,7 +103,7 @@ const ProductAnalytics = () => {
           </span>{" "}
           units sold at price{" "}
           <span className="text-blue-600 font-semibold">
-            ${best.PRICE_AT_THAT_TIME}
+            ৳{best.PRICE_AT_THAT_TIME}
           </span>
         </div>
       )}

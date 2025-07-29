@@ -30,6 +30,7 @@ import TaxManager from "./pages/AdminPages/TaxManager";
 import WishlistPage from "./components/customerProducts/WishListPage";
 import ManageOrders from "./pages/AdminPages/ManageOrders";
 import ProductAnalytics from "./components/SellerProducts/ProductAnalytics";
+import SellerOrderHistory from "./components/SellerProducts/SellerOrderHistory";
 
 function App() {
   return (
@@ -78,6 +79,7 @@ function App() {
             element={<EditCustomerProfile />}
           />
           <Route path="/customer/wishlist" element={<WishlistPage />} />
+          <Route path="/seller/orders" element={<SellerOrderHistory />} />
         </Routes>
       </CategoryProvider>
     </Router>
