@@ -7,7 +7,7 @@ import ReviewReplies from "../components/ReviewReplies";
 import { formatDistanceToNow } from "date-fns";
 import Navbar from "../components/Navbar";
 
-const ProductPage = () => {
+const ProductPage = ({ userType }) => {
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);

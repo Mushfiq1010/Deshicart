@@ -10,7 +10,7 @@ const CartPay = () => {
   const [timeLeft, setTimeLeft] = useState(180);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [customerId,setCustomerId] = useState(0);
   const apiKey = "super-secret-deshicart-to-wallet-key";
 
   const passedCartItems = location.state?.cartItems || [];
@@ -22,14 +22,21 @@ const CartPay = () => {
   const get = (item, key) =>
     item[key] ?? item[key.toUpperCase()] ?? item[key.toLowerCase()] ?? 0;
 
+
+  const getCustomer = async() => {
+    try{
+      const res = await API.get(`/auth/customer/getMe`);
+      setCustomerId(res.data.USERID);
+    }catch(e){
+      console.log(e);
+    }
+  }
   useEffect(() => {
-    //if (passedCartItems.length > 0) {
+    getCustomer();
     setCartItems(passedCartItems);
     setVatTotal(passedVatTotal);
     processCartItems(passedCartItems);
-    //} else {
-    // fetchCartAndProcess();
-    //}
+    
   }, []);
 
   useEffect(() => {
@@ -131,6 +138,7 @@ const CartPay = () => {
             "x-api-key": apiKey,
           },
           body: JSON.stringify({
+            customerId,
             username,
             password,
             transactions: transactionRequests,
@@ -144,10 +152,11 @@ const CartPay = () => {
         navigate("/customer/products");
         return;
       }
-
+      const payId = data.paymentId;
       const orderRes = await API.post("/customer/placeorder", {
         cartItems,
         vatTotal,
+        payId,
         isCart: true,
       });
 

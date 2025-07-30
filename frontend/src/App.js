@@ -31,7 +31,7 @@ import WishlistPage from "./components/customerProducts/WishListPage";
 import ManageOrders from "./pages/AdminPages/ManageOrders";
 import ProductAnalytics from "./components/SellerProducts/ProductAnalytics";
 import SellerOrderHistory from "./components/SellerProducts/SellerOrderHistory";
-
+import ManageWarehouses from "./pages/AdminPages/ManageWarehouses";
 function App() {
   return (
     <Router>
@@ -54,6 +54,7 @@ function App() {
           <Route path="/customer/products" element={<Allproducts />} />
           <Route path="/seller/products/new" element={<AddProduct />} />
           <Route path="/seller/products/edit/:id" element={<EditProduct />} />
+          <Route path="/admin/cities" element ={<ManageWarehouses/>} />
           <Route
             path="/seller/products/analytics/:id"
             element={<ProductAnalytics />}
@@ -67,7 +68,8 @@ function App() {
             path="/customer/change-password"
             element={<ChangePassword userType="customer" />}
           />
-          <Route path="/customer/products/:id" element={<ProductPage />} />
+          <Route path="/customer/products/:id" element={<ProductPage userType="customer" />} />
+          <Route path="/seller/products/:id" element={<ProductPage userType="seller" />} />
           <Route path="/order/:id" element={<OrderPage />} />
           <Route path="/customer/cart" element={<CartPage />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />

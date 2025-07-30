@@ -1,7 +1,7 @@
 import express from "express";
-import { getAllProducts, adminDeleteProduct,deleteSeller,getTopOrderedProducts,getOrderHistory, getTopSellers, getActiveVat, getPendingOrders } from "../controllers/admin.controller.js";
+import { getAllProducts, adminDeleteProduct,deleteSeller,getTopOrderedProducts,getOrderHistory, getTopSellers, getActiveVat, getPendingOrders, getCity } from "../controllers/admin.controller.js";
 import { protectRoute } from "../middleware/protectroute.js";
-import { getSellers,getCustomers, getVatByCategory,addOrUpdateVat,acceptOrder,declineOrder } from "../controllers/admin.controller.js";
+import { getSellers,getCustomers, getVatByCategory,addOrUpdateVat,acceptOrder,declineOrder, addCity } from "../controllers/admin.controller.js";
 import { getCategories,submitCategories,addSingleCategory } from "../controllers/category.controllers.js";
 const router = express.Router();
 
@@ -22,5 +22,7 @@ router.get('/pending-orders', protectRoute, getPendingOrders);
 router.post("/accept-order/:id", acceptOrder);
 router.post("/decline-order/:id", declineOrder);
 router.post('/vat', protectRoute, addOrUpdateVat);
+router.post("/cities",protectRoute, addCity);
+router.get("/cities",protectRoute, getCity);
 router.get('/vat/active/:categoryid', protectRoute, getActiveVat);
 export default router;

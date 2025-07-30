@@ -159,15 +159,18 @@ export const placeOrder = async (req, res) => {
     }
     const status = "P";
 
+    const payId = req.body.payId;
+
     const orderResult = await conn.execute(
-      `INSERT INTO ProductOrder (CustomerID, SubTotal, Total, Status)
-       VALUES (:custId, :subTotal, :total, :status)
+      `INSERT INTO ProductOrder (CustomerID, SubTotal, Total, Status,PaymentID)
+       VALUES (:custId, :subTotal, :total, :status, :payId)
        RETURNING OrderID INTO :orderId`,
       {
         custId: customerId,
         subTotal,
         total,
         status,
+        payId,
         orderId: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
       }
     );

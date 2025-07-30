@@ -21,6 +21,7 @@ const AdminDashboard = () => {
   const gotoCategories = () => navigate("/admin/categories");
   const goToTaxrate = () => navigate("/admin/taxrate");
   const goToOrders = () => navigate("/admin/orders");
+  const goToCities = () => navigate("/admin/cities");
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -108,6 +109,20 @@ const AdminDashboard = () => {
               Go to Orders
             </button>
           </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-2">Manage Warehouses</h3>
+            <p className="text-gray-600 mb-4">
+              Upload your warehouse locations
+            </p>
+            <button
+              onClick={goToCities}
+              className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600"
+            >
+              Go to Warehouses
+            </button>
+          </div>
+
         </div>
       </main>
 

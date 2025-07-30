@@ -592,3 +592,42 @@ export const declineOrder = async (req, res) => {
     }
   }
 }
+
+export const addCity = async(req,res) => {
+  const { city } = req.body;
+  if (!city) {
+    return res.status(400).json({ success: false, message: "City is required" });
+  }
+  let conn;
+  try {
+    conn = await connectDB();
+    await conn.execute(
+      `INSERT INTO CITIES (CITY) VALUES (:city)`,
+      { city },
+      { autoCommit: true }
+    );
+    res.json({ success: true, message: "City added successfully" });
+  } catch (err) {
+    console.error("City insert error:", err);
+    res.status(500).json({ success: false, message: "Database error" });
+  } finally {
+    if (conn) await conn.close();
+  }
+}
+
+export const getCity = async(req,res) => {
+  let conn;
+  try {
+    conn = await connectDB();
+    const result = await conn.execute(`SELECT cityid, city FROM cities ORDER BY city ASC`);
+    const cities = result.rows.map(([cityid, city]) => ({ cityid, city }));
+
+    res.json({ success: true, cities });
+  } catch (err) {
+    console.error("Error fetching cities:", err);
+    res.status(500).json({ success: false, message: "Database error" });
+  } finally {
+    if (conn) await conn.close();
+  }
+}
+

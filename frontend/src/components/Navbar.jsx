@@ -23,7 +23,7 @@ const Navbar = ({ userType }) => {
       }
     };
 
-    const loadCartCount = async () => {
+    /* const loadCartCount = async () => {
       if (userType === "customer") {
         try {
           const res = await API.get("/customer/cart");
@@ -32,10 +32,10 @@ const Navbar = ({ userType }) => {
           console.error("Failed to fetch cart count");
         }
       }
-    };
+    }; */
 
     loadProfile();
-    loadCartCount();
+    //loadCartCount();
   }, [userType]);
 
   useEffect(() => {

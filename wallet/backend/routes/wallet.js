@@ -1,26 +1,28 @@
-import express from 'express';
-import { getWallet, deposit, withdraw } from '../models/walletModel.js';
-import { auth } from '../middleware/auth.js';
-import { db } from '../config/db.js';
-import { findByUsername } from '../models/userModel.js';
-import bcrypt from 'bcryptjs';
+import express from "express";
+import { getWallet, deposit, withdraw } from "../models/walletModel.js";
+import { auth } from "../middleware/auth.js";
+import { db } from "../config/db.js";
+import { findByUsername } from "../models/userModel.js";
+import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+import oracledb from "oracledb"
+
 dotenv.config();
 
 const router = express.Router();
 
-router.get('/', auth, async (req, res) => {
+router.get("/", auth, async (req, res) => {
   const wallet = await getWallet(req.user.id);
   res.json(wallet);
 });
 
-router.post('/deposit', auth, async (req, res) => {
+router.post("/deposit", auth, async (req, res) => {
   const { amount } = req.body;
   await deposit(req.user.id, parseFloat(amount));
   res.json({ message: "Deposit successful" });
 });
 
-router.post('/withdraw', auth, async (req, res) => {
+router.post("/withdraw", auth, async (req, res) => {
   const { amount } = req.body;
   try {
     await withdraw(req.user.id, parseFloat(amount));
@@ -30,8 +32,8 @@ router.post('/withdraw', auth, async (req, res) => {
   }
 });
 
-router.post('/checkout-cart', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
+router.post("/checkout-cart", async (req, res) => {
+  const apiKey = req.headers["x-api-key"];
   if (apiKey !== process.env.DESHICART_API_KEY) {
     return res.status(401).json({
       success: false,
@@ -39,26 +41,35 @@ router.post('/checkout-cart', async (req, res) => {
     });
   }
 
-  const { transactions, username, password } = req.body;
+  const { transactions, username, password, customerId } = req.body;
   let connection;
   try {
     const user = await findByUsername(username);
     if (!user || !(await bcrypt.compare(password, user.PASSWORD_HASH))) {
-      return res.status(400).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
     }
     const buyerId = user.ID;
 
     connection = await db.getConnection();
-    //await connection.execute(`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
-
     const balanceResult = await connection.execute(
       `SELECT balance FROM wallets WHERE username = :username FOR UPDATE`,
       { username }
     );
 
     if (balanceResult.rows.length === 0) {
-      throw new Error('Buyer wallet not found');
+      throw new Error("Buyer wallet not found");
     }
+
+    const paymentResult = await connection.execute(
+      `INSERT INTO PAYMENT (CUSTOMERID) VALUES (:customerId) RETURNING PAYMENTID INTO :paymentId`,
+      {
+        customerId,
+        paymentId: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+      }
+    );
+    const paymentId = paymentResult.outBinds.paymentId[0];
 
     let balance = balanceResult.rows[0].BALANCE;
     let globalTotal = 0;
@@ -71,43 +82,45 @@ router.post('/checkout-cart', async (req, res) => {
         throw new Error(`Invalid seller wallet: ${sellerWallet}`);
       }
 
-      if (balance < amount) {
-        throw new Error('Insufficient balance');
+      if (balance < amount + vatAmount) {
+        throw new Error("Insufficient balance");
       }
 
-      const totalAmount = amount + vatAmount
+      const totalAmount = amount + vatAmount;
       const withdrawResult = await connection.execute(
         `UPDATE wallets SET balance = balance - :amount WHERE username = :username`,
-        { amount:totalAmount, username }
+        { amount: totalAmount, username }
       );
-      if (withdrawResult.rowsAffected === 0) throw new Error('Failed to withdraw');
+      if (withdrawResult.rowsAffected === 0)
+        throw new Error("Failed to withdraw");
 
       const depositResult = await connection.execute(
         `UPDATE wallets SET balance = balance + :amount WHERE username = :receiver`,
         { amount, receiver: sellerWallet }
       );
-      if (depositResult.rowsAffected === 0) throw new Error('Failed to deposit');
+      if (depositResult.rowsAffected === 0)
+        throw new Error("Failed to deposit");
 
       const taxDeposit = await connection.execute(
         `UPDATE wallets SET balance = balance + :amount WHERE username = :receiver`,
-        { amount:vatAmount, receiver: "GOB" }
+        { amount: vatAmount, receiver: "GOB" }
       );
-      if (taxDeposit.rowsAffected === 0) throw new Error('Failed to deposit');
+      if (taxDeposit.rowsAffected === 0) throw new Error("Failed to deposit");
 
       await connection.execute(
-        `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'withdraw', :amount)`,
-        { id: buyerId, amount:totalAmount }
+        `INSERT INTO transactions (user_id, type, amount, paymentid) VALUES (:id, 'withdraw', :amount, :pid)`,
+        { id: buyerId, amount: totalAmount, pid: paymentId }
       );
       await connection.execute(
-        `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'deposit', :amount)`,
-        { id: seller.ID, amount }
+        `INSERT INTO transactions (user_id, type, amount, paymentid) VALUES (:id, 'deposit', :amount, :pid)`,
+        { id: seller.ID, amount, pid: paymentId }
       );
       await connection.execute(
-        `INSERT INTO transactions (user_id, type, amount) VALUES (:id, 'deposit', :amount)`,
-        { id: 61, amount:vatAmount } // Assuming 61 is the GOB wallet ID
+        `INSERT INTO transactions (user_id, type, amount, paymentid) VALUES (:id, 'deposit', :amount, :pid)`,
+        { id: 61, amount: vatAmount, pid: paymentId } // GOB's user ID is 61
       );
 
-      balance -= amount+vatAmount;
+      balance -= amount + vatAmount;
       globalTotal += amount + vatAmount;
     }
 
@@ -115,8 +128,9 @@ router.post('/checkout-cart', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'All payments processed successfully',
-      totalPaid: globalTotal
+      message: "All payments processed successfully",
+      totalPaid: globalTotal,
+      paymentId
     });
   } catch (error) {
     if (connection) await connection.rollback();
@@ -126,8 +140,8 @@ router.post('/checkout-cart', async (req, res) => {
   }
 });
 
-router.post('/balance-check', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
+router.post("/balance-check", async (req, res) => {
+  const apiKey = req.headers["x-api-key"];
   if (apiKey !== process.env.DESHICART_API_KEY) {
     return res.status(401).json({
       success: false,
@@ -138,9 +152,14 @@ router.post('/balance-check', async (req, res) => {
   const user = await findByUsername(username);
   const conn = await db.getConnection();
   if (!user) {
-    return res.status(400).json({ success: false, message: "User doesn't exist" });
+    return res
+      .status(400)
+      .json({ success: false, message: "User doesn't exist" });
   }
-  const result = await conn.execute(`SELECT balance FROM wallets WHERE username = :username`, { username });
+  const result = await conn.execute(
+    `SELECT balance FROM wallets WHERE username = :username`,
+    { username }
+  );
   const balance = result.rows[0].BALANCE;
   if (balance < amount) {
     await conn.close();

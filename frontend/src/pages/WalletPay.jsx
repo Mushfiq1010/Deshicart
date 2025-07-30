@@ -6,7 +6,7 @@ const WalletPay = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-
+  const [customerId,setCustomerId] = useState(0);
   const location = useLocation();
   const {
     productId,
@@ -21,6 +21,23 @@ const WalletPay = () => {
     name,
   } = location.state || {};
 
+  const getSellerWallet = async (sellerId) => {
+    try {
+      const res = await API.get(`/auth/seller/wallet/${sellerId}`);
+      return res.data?.walletUserName || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getCustomer = async() => {
+    try{
+      const res = await API.get(`/auth/customer/getMe`);
+      setCustomerId(res.data.USERID);
+    }catch(e){
+      console.log(e);
+    }
+  }
   useEffect(() => {
     if (
       !productId ||
@@ -33,6 +50,7 @@ const WalletPay = () => {
       alert("Invalid checkout session. Redirecting to products page.");
       navigate("/customer/products");
     }
+    getCustomer();
   }, []);
 
   const handlePay = async (e) => {
@@ -55,8 +73,9 @@ const WalletPay = () => {
                 amount: total,
                 vatAmount,
                 sellerWallet,
-              },
+              }
             ],
+            customerId
           }),
         }
       );
@@ -68,9 +87,10 @@ const WalletPay = () => {
         return;
       }
 
+      const payId = trxData.paymentId;
+
       const payload = {
         cartItems: [
-          // you can send multiple or just one
           {
             PRODUCTID: Number(productId),
             QUANTITY: Number(quantity),
@@ -81,6 +101,8 @@ const WalletPay = () => {
           },
         ],
         isCart: false,
+        payId
+
       };
 
       const res = await API.post("/customer/placeorder", payload);

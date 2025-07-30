@@ -124,7 +124,7 @@ function ProductList() {
     <div className="bg-gradient-to-br from-indigo-50 to-sky-50 min-h-screen">
       <Navbar userType="seller" />
       <div className="max-w-7xl mx-auto px-6 pt-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <h2 className="text-2xl font-semibold text-gray-800">
             📦 My Products
           </h2>
@@ -275,14 +275,7 @@ function ProductList() {
                   >
                     📊 Analytics
                   </button>
-                  <button
-                    onClick={() =>
-                      navigate(`/customer/products/${product.productId}`)
-                    }
-                    className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-indigo-600 hover:to-purple-500 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all duration-300 hover:-translate-y-1"
-                  >
-                    🔍 View Product
-                  </button>
+              
                 </div>
               </div>
             ))}
