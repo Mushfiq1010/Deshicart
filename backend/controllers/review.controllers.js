@@ -116,13 +116,12 @@ export const postReply = async (req, res) => {
     connection = await connectDB();
     const userId = req.user.USERID;
     await connection.execute(
-      `INSERT INTO Reply (ReviewId, UserId, CommentText, ParentReplyId)
-       VALUES (:reviewId, :userId, :commentText, :parentReplyId)`,
+      `INSERT INTO Reply (ReviewId, UserId, CommentText)
+       VALUES (:reviewId, :userId, :commentText)`,
       {
         reviewId,
         userId,
         commentText,
-        parentReplyId: parentReplyId || null,
       },
       { autoCommit: true }
     );

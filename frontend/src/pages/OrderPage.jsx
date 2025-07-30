@@ -7,38 +7,47 @@ const OrderPage = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState({});
   const [quantity, setQuantity] = useState(1);
-  const [walletUser, setWalletUser] = useState("");
+  const [cities, setCities] = useState([]);
+  const [cityid, setcityid] = useState("");
+  const [street, setStreet] = useState("");
   const [loading, setLoading] = useState(true);
   const [vatRate, setvatRate] = useState(0);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProductAndCities = async () => {
       try {
         const res = await API.get(`/products/${id}`);
         setProduct(res.data);
         const vatRes = await API.get(`/admin/vat/${res.data.ROOTCATEGORYID}`);
         setvatRate(vatRes.data?.[0]?.rate || 0);
+
+        const cityRes = await API.get("/admin/cities");
+        setCities(cityRes.data.cities);
+
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching product:", err);
+        console.error("Error fetching product or cities:", err);
         setLoading(false);
       }
     };
 
-    fetchProduct();
+    fetchProductAndCities();
   }, [id]);
 
   const handleRedirectToWallet = async (e) => {
     e.preventDefault();
+
+    if (!street.trim() || !cityid) {
+      alert("❌ Please select a city and provide your address.");
+      return;
+    }
 
     const subTotal = product.PRICE * quantity;
     const vatAmount = (subTotal * vatRate) / 100;
     const total = subTotal + vatAmount;
 
     try {
-      const sellerRes = await API.get(
-        `/auth/seller/wallet/${product.SELLERID}`
-      );
+      const sellerRes = await API.get(`/auth/seller/wallet/${product.SELLERID}`);
       const sellerWallet = sellerRes.data?.walletUserName;
 
       if (!sellerWallet) {
@@ -58,6 +67,8 @@ const OrderPage = () => {
           sellerWallet,
           vatRate,
           name: product.NAME,
+          cityid,
+          street,
         },
       });
     } catch (err) {
@@ -95,6 +106,35 @@ const OrderPage = () => {
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}
             className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring focus:ring-indigo-200"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium text-gray-700 mb-1">Select City</label>
+          <select
+            value={cityid}
+            onChange={(e) => setcityid(e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-200"
+            required
+          >
+            <option value="">Select a warehouse city</option>
+            {cities.map((city) => (
+              <option key={city.cityid} value={city.cityid}>
+                {city.city}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block font-medium text-gray-700 mb-1">Street Address</label>
+          <textarea
+            value={street}
+            onChange={(e) => setStreet(e.target.value)}
+            placeholder="Flat no, Road no, Landmark..."
+            maxLength={100}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-indigo-200"
             required
           />
         </div>

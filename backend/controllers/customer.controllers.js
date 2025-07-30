@@ -160,10 +160,35 @@ export const placeOrder = async (req, res) => {
     const status = "P";
 
     const payId = req.body.payId;
+    const cityid = req.body.cityid;
+    const street = req.body.street;
+
+    const result1 = await conn.execute(
+      `INSERT INTO ADMIN.SHIPPINGADDRESS (STREETADDRESS, CITYID)
+       VALUES (:street, :cityid)
+       RETURNING ADDRESSID INTO :addressId`,
+      {
+        street,
+        cityid,
+        addressId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      }
+    );
+    const addressId = result1.outBinds.addressId[0];
+
+    const result2 = await conn.execute(
+      `INSERT INTO ADMIN.SHIPMENT (SHIPPINGADDRESSID, ARRIVALDATE)
+       VALUES (:addressId, SYSDATE + 5)
+       RETURNING SHIPMENTID INTO :shipmentId`,
+      {
+        addressId,
+        shipmentId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      }
+    );
+    const shipmentId = result2.outBinds.shipmentId[0];
 
     const orderResult = await conn.execute(
-      `INSERT INTO ProductOrder (CustomerID, SubTotal, Total, Status,PaymentID)
-       VALUES (:custId, :subTotal, :total, :status, :payId)
+      `INSERT INTO ProductOrder (CustomerID, SubTotal, Total, Status,PaymentID, ShipmentID)
+       VALUES (:custId, :subTotal, :total, :status, :payId, :shipmentId)
        RETURNING OrderID INTO :orderId`,
       {
         custId: customerId,
@@ -171,6 +196,7 @@ export const placeOrder = async (req, res) => {
         total,
         status,
         payId,
+        shipmentId,
         orderId: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
       }
     );

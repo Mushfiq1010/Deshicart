@@ -123,6 +123,10 @@ function AllProducts() {
     fetchProducts();
   }, [page, name]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [name]);
+
   const getImageUrl = (url) => {
     if (!url) return "/images/photo.png";
     return url.startsWith("http")

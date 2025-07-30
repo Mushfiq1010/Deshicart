@@ -23,6 +23,6 @@ router.post("/accept-order/:id", acceptOrder);
 router.post("/decline-order/:id", declineOrder);
 router.post('/vat', protectRoute, addOrUpdateVat);
 router.post("/cities",protectRoute, addCity);
-router.get("/cities",protectRoute, getCity);
+router.get("/cities", getCity);
 router.get('/vat/active/:categoryid', protectRoute, getActiveVat);
 export default router;

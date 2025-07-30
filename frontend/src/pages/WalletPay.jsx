@@ -19,16 +19,10 @@ const WalletPay = () => {
     sellerWallet,
     vatRate,
     name,
+    cityid,
+    street
   } = location.state || {};
 
-  const getSellerWallet = async (sellerId) => {
-    try {
-      const res = await API.get(`/auth/seller/wallet/${sellerId}`);
-      return res.data?.walletUserName || null;
-    } catch {
-      return null;
-    }
-  };
 
   const getCustomer = async() => {
     try{
@@ -101,13 +95,16 @@ const WalletPay = () => {
           },
         ],
         isCart: false,
-        payId
+        payId,
+        cityid,
+        street
 
       };
 
       const res = await API.post("/customer/placeorder", payload);
       const orderData = res.data;
 
+      console.log(cityid+street);
       if (!orderData.success) {
         throw new Error(orderData.message || "Order creation failed.");
       }

@@ -507,8 +507,11 @@ export const getPendingOrders = async (req, res) => {
     connection = await connectDB();
 
     const result = await connection.execute(
-      `SELECT ORDERID, CUSTOMERID, ORDERDATE, SUBTOTAL, TOTAL, STATUS
-       FROM PRODUCTORDER
+      `SELECT PO.ORDERID, PO.CUSTOMERID, PO.ORDERDATE, PO.SUBTOTAL, PO.TOTAL, PO.STATUS, C.CITY
+       FROM PRODUCTORDER PO
+       JOIN SHIPMENT S ON S.SHIPMENTID = PO.SHIPMENTID
+       JOIN SHIPPINGADDRESS SA ON SA.ADDRESSID = S.SHIPPINGADDRESSID
+       JOIN CITIES C ON C.CITYID = SA.CITYID 
        WHERE TRIM(UPPER(STATUS)) = 'P'`,
       {},
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
