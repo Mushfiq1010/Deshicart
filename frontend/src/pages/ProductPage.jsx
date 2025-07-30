@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import API from "../Api";
-import { CategoryContext } from "../context/CategoryContext"; // adjust path if needed
+import { CategoryContext } from "../context/CategoryContext";
 import { useContext } from "react";
+import ReviewReplies from "../components/ReviewReplies";
+import { formatDistanceToNow } from "date-fns";
+import Navbar from "../components/Navbar";
 
 const ProductPage = () => {
   const [newRating, setNewRating] = useState(5);
@@ -11,8 +14,12 @@ const ProductPage = () => {
   const [product, setProduct] = useState({});
   const [reviews, setReviews] = useState([]);
   const [path, setPath] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const { id } = useParams();
-  const { categoryMap} = useContext(CategoryContext);
+  const { categoryMap } = useContext(CategoryContext);
+
   
 
   useEffect(() => {
@@ -42,10 +49,10 @@ const ProductPage = () => {
     let result = [];
     let current = categoryMap[product.CATEGORYID];
     while (current) {
-      result.unshift(current.name); 
+      result.unshift(current.name);
       current = categoryMap[current.parentid];
     }
-    setPath(result.join("->"));
+    setPath(result.join(" → "));
   }, [product]);
 
   const handleSubmitReview = async () => {
@@ -66,12 +73,11 @@ const ProductPage = () => {
       alert("✅ Review submitted!");
       setNewComment("");
       setNewRating(5);
+      setShowReviewForm(false);
 
-      // Refresh reviews
       const refreshed = await API.get(`/reviews/${id}`);
       setReviews(refreshed.data);
 
-      //Refresh product to update the product rating
       const refreshedProduct = await API.get(`/products/${id}`);
       setProduct(refreshedProduct.data);
     } catch (err) {
@@ -84,13 +90,16 @@ const ProductPage = () => {
 
   const handleAddToCart = async (productId) => {
     try {
-      const quantity = 1;
       const res = await API.post("/customer/addcart", {
         productId,
         quantity,
       });
 
       if (res.status === 200) {
+        // Success animation
+        const button = document.querySelector('.add-to-cart-btn');
+        button.classList.add('animate-pulse');
+        setTimeout(() => button.classList.remove('animate-pulse'), 600);
         alert("✅ Added to cart!");
       } else {
         alert("❌ Failed to add to cart.");
@@ -101,228 +110,331 @@ const ProductPage = () => {
     }
   };
 
-  return (
-    <>
-      <section className="bg-white">
-        <div className="container mx-auto py-4 px-6">
-          <Link
-            to="/customer/products"
-            className="text-sm text-indigo-600 hover:underline"
-          >
-            ← Back to Home
-          </Link>
-        </div>
-      </section>
+  const renderStars = (rating, size = "text-lg") => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span
+        key={i}
+        className={`${size} ${
+          i < Math.floor(rating)
+            ? "text-yellow-400"
+            : i < rating
+            ? "text-yellow-300"
+            : "text-gray-300"
+        }`}
+      >
+        ★
+      </span>
+    ));
+  };
 
-      <section className="bg-gray-50">
-        <div className="container mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 px-6 py-10">
-          {/* Image Column */}
-          <div className="lg:col-span-4">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <img
-                src={product.IMAGEURL || "/images/photo.png"}
-                alt={product.NAME}
-                className="w-full h-auto object-contain rounded"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/images/photo.png";
-                }}
-              />
+  const productImages = [
+    product.IMAGEURL || "/images/photo.png",
+    "/images/photo.png", 
+    "/images/photo.png",
+  ];
+
+  return (
+    <><Navbar userType="customer">  </Navbar>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          {/* Image Gallery Section */}
+          <div className="xl:col-span-5">
+            <div className="sticky top-8">
+              {/* Main Image */}
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-4 group">
+                <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+                  <img
+                    src={productImages[activeImageIndex]}
+                    alt={product.NAME}
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/images/photo.png";
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Thumbnail Gallery */}
+              <div className="flex space-x-3">
+                {productImages.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveImageIndex(index)}
+                    className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                      activeImageIndex === index
+                        ? "border-indigo-500 shadow-lg"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.NAME} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Middle Column: Details + Reviews */}
-          <div className="lg:col-span-5 space-y-8">
-            {/* Product Details Card */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
-                {product.NAME}
-              </h1>
-
-              <p className="text-sm text-gray-500 mb-2">
-                Category:{" "}
-                <span className="text-indigo-700 font-medium">
+          {/* Product Information */}
+          <div className="xl:col-span-4 space-y-6">
+            {/* Product Header */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="mb-4">
+                <span className="inline-block px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full mb-3">
                   {path || "Uncategorized"}
                 </span>
-              </p>
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                  {product.NAME}
+                </h1>
+              </div>
 
+              {/* Rating Section */}
               {product.AVERAGERATING && (
-                <p className="text-yellow-600 font-medium text-sm mb-4">
-                  ⭐ {product.AVERAGERATING.toFixed(1)} / 5 ({reviews.length}{" "}
-                  reviews)
-                </p>
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="flex items-center">
+                    {renderStars(product.AVERAGERATING)}
+                    <span className="ml-2 text-xl font-bold text-gray-800">
+                      {product.AVERAGERATING.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-gray-300"></div>
+                  <span className="text-gray-600">
+                    {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
               )}
 
-              <h3 className="text-lg font-semibold text-indigo-800 mt-6 mb-2">
-                Description
-              </h3>
-              <p className="text-gray-700 leading-relaxed">
-                {product.DESCRIPTION || "No description available."}
-              </p>
+              {/* Description */}
+              <div className="prose prose-gray max-w-none">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Description</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {product.DESCRIPTION || "No description available."}
+                </p>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-xl font-semibold text-indigo-800 mb-4 border-b pb-2">
-                Customer Reviews
-              </h3>
-
-              {reviews.length > 0 ? (
-                <div
-                  className="space-y-4 max-h-[350px] overflow-y-auto overflow-x-hidden pr-2"
-                  style={{
-                    overflowWrap: "break-word",
-                    wordBreak: "break-word",
-                    wordWrap: "break-word",
-                    maxWidth: "100%",
-                    boxSizing: "border-box",
-                  }}
+            {/* Reviews Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">Customer Reviews</h3>
+                <button
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium"
                 >
-                  {reviews.map((review, idx) => (
-                    <div
-                      key={idx}
-                      className="border-b pb-3"
-                      style={{
-                        overflowWrap: "break-word",
-                        wordBreak: "break-word",
-                        wordWrap: "break-word",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      <p className="text-sm text-gray-800 font-medium">
-                        ⭐ {review.RATINGVALUE} — {review.CUSTOMERNAME}
-                      </p>
-                      <p
-                        className="text-gray-600 text-sm break-words whitespace-pre-wrap break-all"
-                        style={{
-                          wordBreak: "break-word",
-                          overflowWrap: "break-word",
-                        }}
+                  Write Review
+                </button>
+              </div>
+
+              {/* Review Form */}
+              {showReviewForm && (
+                <div className="mb-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Share Your Experience</h4>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                      <div className="flex items-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setNewRating(star)}
+                            className={`text-2xl transition-colors duration-200 ${
+                              star <= newRating ? "text-yellow-400" : "text-gray-300"
+                            }`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                        <span className="ml-3 text-sm text-gray-600">
+                          {newRating} star{newRating !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Your Review</label>
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        rows={4}
+                        className="w-full border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 resize-none"
+                        placeholder="Share your thoughts about this product..."
+                      />
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleSubmitReview}
+                        disabled={submitting}
+                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all duration-200 font-medium"
                       >
-                        {review.COMMENTTEXT}
-                      </p>
+                        {submitting ? "Submitting..." : "Submit Review"}
+                      </button>
+                      <button
+                        onClick={() => setShowReviewForm(false)}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200 font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews List */}
+              {reviews.length > 0 ? (
+                <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+                  {reviews.map((review, idx) => (
+                    <div key={idx} className="border-b border-gray-100 pb-6 last:border-b-0">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                            {review.CUSTOMERNAME?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <h5 className="font-semibold text-gray-900">{review.CUSTOMERNAME}</h5>
+                            <div className="flex items-center space-x-2">
+                              {renderStars(review.RATINGVALUE, "text-sm")}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {review.CREATEDAT
+                            ? formatDistanceToNow(new Date(review.CREATEDAT), { addSuffix: true })
+                            : ""}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed mb-3">{review.COMMENTTEXT}</p>
+                      <ReviewReplies reviewId={review.REVIEWID} />
                     </div>
                   ))}
                 </div>
               ) : (
-                <p
-                  className="text-gray-500 italic break-words whitespace-pre-wrap break-all"
-                  style={{
-                    wordBreak: "break-word",
-                    overflowWrap: "break-word",
-                  }}
-                >
-                  No review yet
-                </p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10m0 0V18a2 2 0 01-2 2H9a2 2 0 01-2-2V8m8 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m8 0L13 4" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-lg">No reviews yet</p>
+                  <p className="text-gray-400 text-sm">Be the first to share your experience!</p>
+                </div>
               )}
-
-              <hr className="my-4" />
-              <h4 className="text-md font-semibold text-gray-800 mb-2">
-                Submit a Review
-              </h4>
-
-              <div className="space-y-3">
-                <select
-                  value={newRating}
-                  onChange={(e) => setNewRating(Number(e.target.value))}
-                  className="w-full border border-indigo-300 p-2 rounded-lg focus:ring-indigo-500"
-                >
-                  {[5, 4, 3, 2, 1].map((val) => (
-                    <option key={val} value={val}>
-                      {val} Star{val > 1 && "s"}
-                    </option>
-                  ))}
-                </select>
-
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={4}
-                  className="w-full border border-gray-300 p-3 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Write your review..."
-                />
-
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={submitting}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50"
-                >
-                  {submitting ? "Submitting..." : "Submit Review"}
-                </button>
-              </div>
             </div>
           </div>
 
-          <div className="lg:col-span-3">
-            <div className="bg-white p-6 rounded-lg shadow sticky top-20">
-              <p className="text-2xl font-bold text-orange-600 mb-2">
-                ৳{product.PRICE}
-              </p>
+          {/* Purchase Section */}
+          <div className="xl:col-span-3">
+            <div className="sticky top-8">
+              {/* Price & Purchase Card */}
+              <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                <div className="text-center mb-6">
+                  <p className="text-4xl font-bold text-indigo-600 mb-2">৳{product.PRICE}</p>
+                  <div className="flex items-center justify-center space-x-2">
+                    {product.QUANTITY > 0 ? (
+                      <>
+                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="text-green-600 font-medium">In Stock</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                        <span className="text-red-500 font-medium">Out of Stock</span>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-              <p className="text-sm text-gray-700 mb-4">
-                {product.QUANTITY > 0 ? (
-                  <span className="text-green-600">In Stock</span>
-                ) : (
-                  <span className="text-red-500">Out of Stock</span>
-                )}
-              </p>
+                {/* Quantity Selector */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
+                    >
+                      −
+                    </button>
+                    <span className="w-12 text-center font-semibold text-lg">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
 
-              <div className="flex flex-col gap-3">
-                <button
-                  disabled={product.QUANTITY === 0}
-                  className={`w-full py-2 rounded-lg text-white font-semibold transition ${
-                    product.QUANTITY > 0
-                      ? "bg-yellow-500 hover:bg-yellow-600"
-                      : "bg-gray-400 cursor-not-allowed"
-                  }`}
-                  onClick={() => handleAddToCart(id)}
-                >
-                  Add to Cart
-                </button>
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <button
+                    disabled={product.QUANTITY === 0}
+                    className={`add-to-cart-btn w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300 ${
+                      product.QUANTITY > 0
+                        ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:from-yellow-500 hover:to-orange-600 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                    onClick={() => handleAddToCart(id)}
+                  >
+                    🛒 Add to Cart
+                  </button>
 
-                <Link
-                  to={`/order/${product.PRODUCTID}`}
-                  className="w-full py-2 rounded-lg text-white font-semibold bg-orange-500 hover:bg-orange-600 text-center block"
-                >
-                  Place Order
-                </Link>
+                  <Link
+                    to={`/order/${product.PRODUCTID}`}
+                    className="w-full py-4 rounded-xl font-semibold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 text-center block transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    🚀 Buy Now
+                  </Link>
+                </div>
               </div>
 
-              <hr className="my-4" />
-
-              <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 p-6 rounded-xl shadow mt-6">
-                <h3 className="text-lg font-bold text-indigo-800 mb-3 flex items-center gap-2">
-                  🏬 Store Information
+              {/* Store Information */}
+              <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-2xl shadow-lg p-8 border border-indigo-100">
+                <h3 className="text-xl font-bold text-indigo-900 mb-6 flex items-center">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                    🏪
+                  </div>
+                  Store Information
                 </h3>
 
-                <p className="text-sm text-gray-800 mb-1">
-                  <span className="font-semibold">Store Name:</span>{" "}
-                  {product.STORENAME || "N/A"}
-                </p>
-                <p className="text-sm text-gray-800 mb-1">
-                  <span className="font-semibold">Store Description:</span>{" "}
-                </p>
-
-                {product.STOREDESCRIPTION ? (
-                  <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200 shadow-inner">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
-                      {product.STOREDESCRIPTION}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Store Name</label>
+                    <p className="text-lg text-gray-900 font-medium">
+                      {product.STORENAME || "DeshiCart Store"}
                     </p>
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic mt-1">
-                    No store description available.
-                  </p>
-                )}
 
-                <p className="text-green-700 text-xs mt-4 font-medium">
-                  Delivered by DeshiCart
-                </p>
+                  {product.STOREDESCRIPTION && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">About Store</label>
+                      <div className="mt-2 p-4 bg-white rounded-xl border border-gray-200 shadow-inner">
+                        <p className="text-gray-700 leading-relaxed text-sm">
+                          {product.STOREDESCRIPTION}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t border-indigo-200">
+                    <div className="flex items-center text-green-700">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="font-medium">Delivered by DeshiCart</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </div></>
   );
 };
 

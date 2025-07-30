@@ -30,7 +30,6 @@ function ProductList() {
       try {
         const res = await API.get("/categories");
         setCategories(res.data);
-
         const rootCategories = res.data.filter(
           (cat) =>
             !cat.parentid ||
@@ -40,7 +39,6 @@ function ProductList() {
             cat.parentid === "null" ||
             cat.parentid === 0
         );
-
         setAvailableCategories(rootCategories);
       } catch (err) {
         console.error("Failed to fetch categories", err);
@@ -51,12 +49,10 @@ function ProductList() {
 
   const handleCategoryChange = (e) => {
     const selectedId = e.target.value;
-
     if (!selectedId) {
       resetSelection();
       return;
     }
-
     const selectedCategory = categories.find(
       (cat) => cat.categoryid == selectedId
     );
@@ -66,16 +62,11 @@ function ProductList() {
     newSelected[currentLevel] = selectedCategory;
     newSelected.splice(currentLevel + 1);
     setSelectedCategories(newSelected);
-
     setForm({ ...form, categoryid: selectedId });
 
     const children = categories.filter((cat) => cat.parentid == selectedId);
-    if (children.length > 0) {
-      setAvailableCategories(children);
-      setCurrentLevel(currentLevel + 1);
-    } else {
-      setAvailableCategories([]);
-    }
+    setAvailableCategories(children.length > 0 ? children : []);
+    if (children.length > 0) setCurrentLevel(currentLevel + 1);
   };
 
   const resetSelection = () => {
@@ -99,14 +90,13 @@ function ProductList() {
       const queryParams = new URLSearchParams();
       queryParams.append("page", page);
       queryParams.append("limit", 12);
-
       if (name) queryParams.append("name", name);
       if (filters.minPrice) queryParams.append("minPrice", filters.minPrice);
       if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
       if (form.categoryid) queryParams.append("category", form.categoryid);
 
       const res = await API.get(`/products?${queryParams.toString()}`);
-      setProducts(res.data.products); // <-- This was missing
+      setProducts(res.data.products);
       setTotalPages(res.data.totalPages || 1);
     } catch (err) {
       console.error("Failed to fetch products", err);
@@ -119,7 +109,6 @@ function ProductList() {
   }, [page, name, refreshKey]);
 
   const handleEdit = (id) => navigate(`/seller/products/edit/${id}`);
-
   const handleDelete = async (id) => {
     try {
       await API.delete(`/products/${id}`);
@@ -129,27 +118,29 @@ function ProductList() {
       alert("Failed to delete product: " + err.response?.data?.error);
     }
   };
-
   const handleAnalytics = (id) => navigate(`/seller/products/analytics/${id}`);
 
   return (
     <div className="bg-gradient-to-br from-indigo-50 to-sky-50 min-h-screen">
       <Navbar userType="seller" />
-      <div className="max-w-5xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">My Products</h2>
+      <div className="max-w-7xl mx-auto px-6 pt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            📦 My Products
+          </h2>
           <button
             onClick={() => navigate("/seller/products/new")}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition"
           >
-            Add New Product
+            ➕ Add New Product
           </button>
         </div>
       </div>
 
-      <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8">
-        <div className="w-full md:w-1/4">
-          <div className="sticky top-6 bg-white rounded-2xl p-5 shadow-lg border border-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-7xl mx-auto px-6 py-8">
+        {/* Sidebar */}
+        <div className="col-span-1">
+          <div className="sticky top-6 bg-white rounded-2xl p-5 shadow-lg border border-gray-100 min-h-[500px]">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">
               🔍 Filter Products
             </h3>
@@ -180,7 +171,6 @@ function ProductList() {
 
             <div className="mb-4">
               <h4 className="font-medium text-gray-700 mb-2">📂 Category</h4>
-
               {selectedCategories.length > 0 && (
                 <div className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded text-sm mb-2">
                   <span className="text-gray-600">
@@ -194,7 +184,6 @@ function ProductList() {
                   </button>
                 </div>
               )}
-
               {availableCategories.length > 0 && (
                 <select
                   value={selectedCategories[currentLevel]?.categoryid || ""}
@@ -227,51 +216,77 @@ function ProductList() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div
-              key={product.productId}
-              className="bg-white shadow rounded-lg p-4"
-            >
-              <h3 className="text-lg font-bold text-gray-800 mb-2">
-                {product.name}
-              </h3>
-              <img
-                src={product.firstImageUrl || "/images/photo.png"}
-                alt={product.name}
-                className="w-full h-48 object-cover rounded mb-3"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/images/photo.png";
-                }}
-              />
-              <p className="text-gray-700 mb-1">{product.description}</p>
-              <p className="text-sm text-gray-600">Price: ৳{product.price}</p>
-              <p className="text-sm text-gray-600 mb-3">
-                Quantity: {product.quantity}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(product.productId)}
-                  className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(product.productId)}
-                  className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => handleAnalytics(product.productId)}
-                  className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  Analytics
-                </button>
+        {/* Product Grid */}
+        <div className="col-span-1 md:col-span-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <div
+                key={product.productId}
+                className="relative bg-white/80 backdrop-blur-lg shadow-xl rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-white/20 group"
+              >
+                <div className="relative overflow-hidden rounded-xl mb-4 h-64">
+                  <img
+                    src={product.firstImageUrl || "/images/photo.png"}
+                    alt={product.name}
+                    className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105 rounded-xl"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/images/photo.png";
+                    }}
+                  />
+                  {product.quantity === 0 && (
+                    <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
+                      OUT OF STOCK
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-gray-800 line-clamp-2">
+                    {product.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm line-clamp-2">
+                    {product.description}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-2xl font-bold text-indigo-600">
+                      ৳{product.price}
+                    </p>
+                    <p className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      Qty: {product.quantity}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-4">
+                  <button
+                    onClick={() => handleEdit(product.productId)}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-cyan-600 hover:to-blue-500 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all duration-300 hover:-translate-y-1"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(product.productId)}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-pink-600 hover:to-red-500 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all duration-300 hover:-translate-y-1"
+                  >
+                    🗑️ Delete
+                  </button>
+                  <button
+                    onClick={() => handleAnalytics(product.productId)}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-emerald-600 hover:to-green-500 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all duration-300 hover:-translate-y-1"
+                  >
+                    📊 Analytics
+                  </button>
+                  <button
+                    onClick={() =>
+                      navigate(`/customer/products/${product.productId}`)
+                    }
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-indigo-600 hover:to-purple-500 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all duration-300 hover:-translate-y-1"
+                  >
+                    🔍 View Product
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

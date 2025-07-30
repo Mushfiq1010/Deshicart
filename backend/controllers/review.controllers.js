@@ -85,3 +85,52 @@ export const getReviewsByProduct = async (req, res) => {
     if (conn) await conn.close();
   }
 };
+
+export const getAllReplies = async(req,res) => {
+  const reviewId = req.params.reviewId;
+  let connection;
+
+  try {
+    connection = await connectDB();
+    const result = await connection.execute(
+      `SELECT R.REPLYID, R.REVIEWID, R.COMMENTTEXT, R.CREATEDAT, S.NAME FROM Reply R
+      JOIN SERVICEUSER S ON R.USERID = S.USERID  
+      WHERE ReviewId = :reviewId ORDER BY CreatedAt`,
+      [reviewId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching replies:", err);
+    res.status(500).json({ error: "Failed to get replies" });
+  } finally {
+    if (connection) await connection.close();
+  }
+}
+
+export const postReply = async (req, res) => {
+  const { reviewId, userId, commentText, parentReplyId } = req.body;
+  let connection;
+
+  try {
+    connection = await connectDB();
+    const userId = req.user.USERID;
+    await connection.execute(
+      `INSERT INTO Reply (ReviewId, UserId, CommentText, ParentReplyId)
+       VALUES (:reviewId, :userId, :commentText, :parentReplyId)`,
+      {
+        reviewId,
+        userId,
+        commentText,
+        parentReplyId: parentReplyId || null,
+      },
+      { autoCommit: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error posting reply:", err);
+    res.status(500).json({ error: "Failed to post reply" });
+  } finally {
+    if (connection) await connection.close();
+  }
+};

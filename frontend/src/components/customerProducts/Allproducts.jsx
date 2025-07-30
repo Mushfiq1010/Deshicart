@@ -280,77 +280,81 @@ function AllProducts() {
 
           {error && <p className="text-red-500">{error}</p>}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
               <div
                 key={product.productId}
-                className="relative bg-white shadow-md rounded-lg p-4 transition hover:shadow-lg flex flex-col justify-between overflow-hidden"
+                className="relative bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group"
               >
-                {/* Add to Wishlist Button - Top Right */}
+                {/* Wishlist Button */}
                 <button
                   onClick={() => handleAddToWishlist(product.productId)}
-                  className="absolute top-3 right-3 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md transition-all duration-300 z-10"
+                  className="absolute top-4 right-4 bg-pink-500 hover:bg-pink-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md z-10 transition"
                 >
-                  Add to Wishlist
+                  ♥ Wishlist
                 </button>
 
-                {/* Add top padding to prevent overlap */}
-                <div className="pt-4">
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">
-                    {product.name}
-                  </h3>
-
-                  {product.averageRating && (
-                <p className="text-yellow-600 font-medium text-sm mb-4">
-                  ⭐ {product.averageRating.toFixed(1)} / 5 
-                </p>
-              )}
-
-              {!product.averageRating && (
-                <p className="text-yellow-600 font-medium text-sm mb-4">
-                   ⭐ N/A
-                </p>
-              )}
-
-
+                {/* Product Image */}
+                <div className="relative mb-4 overflow-hidden rounded-xl h-64 sm:h-72 lg:h-80">
                   <img
                     src={getImageUrl(product.firstImageUrl)}
                     alt={product.name}
-                    className="w-full h-48 object-cover rounded mb-3"
+                    className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = "/images/photo.png";
                     }}
                   />
+                  {product.quantity === 0 && (
+                    <span className="absolute top-3 left-3 bg-red-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow">
+                      STOCK OUT
+                    </span>
+                  )}
+                </div>
 
-                  <p className="text-gray-700 mb-1">{product.description}</p>
+                {/* Product Info */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold text-gray-800 line-clamp-2">
+                    {product.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 line-clamp-2">
+                    {product.description}
+                  </p>
 
-                  {/* Price & Stock Out Row */}
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-600">
-                      Price: ৳{product.price}
-                    </p>
-                    {product.quantity === 0 && (
-                      <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
-                        STOCK OUT
-                      </span>
-                    )}
+                  {/* Rating */}
+                  <p className="text-yellow-500 font-medium text-sm">
+                    ⭐{" "}
+                    {product.averageRating
+                      ? product.averageRating.toFixed(1)
+                      : "N/A"}{" "}
+                    / 5
+                  </p>
+
+                  {/* Price and Quantity */}
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-indigo-600 text-lg font-bold">
+                      ৳{product.price}
+                    </span>
+                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      Qty: {product.quantity}
+                    </span>
                   </div>
+                </div>
 
-                  {/* View Product Button */}
+                {/* Action Buttons */}
+                <div className="mt-5 space-y-2">
                   <Link
                     to={`/customer/products/${product.productId}`}
-                    className="w-full text-center bg-gradient-to-r from-green-400 to-emerald-600 hover:from-emerald-600 hover:to-green-500 text-white font-semibold py-2 px-4 rounded transition-all duration-500 ease-in-out transform hover:-translate-y-1 mb-2 block"
+                    className="block text-center bg-gradient-to-r from-green-400 to-emerald-600 hover:from-emerald-600 hover:to-green-500 text-white font-semibold py-2 rounded-lg transition-transform duration-300 hover:-translate-y-1"
                   >
                     View Product
                   </Link>
 
-                  {/* Cart & Order Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => handleAddToCart(product.productId)}
                       disabled={product.quantity === 0}
-                      className={`w-full sm:w-1/2 text-center py-2 px-4 rounded font-semibold transition-all duration-500 ease-in-out transform ${
+                      className={`flex-1 text-center py-2 rounded-lg font-semibold transition-transform duration-300 ${
                         product.quantity === 0
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-pink-500 text-white hover:-translate-y-1"
@@ -358,10 +362,11 @@ function AllProducts() {
                     >
                       Add to Cart
                     </button>
+
                     <button
                       onClick={() => handleOrderNow(product.productId)}
                       disabled={product.quantity === 0}
-                      className={`w-full sm:w-1/2 text-center py-2 px-4 rounded font-semibold transition-all duration-500 ease-in-out transform ${
+                      className={`flex-1 text-center py-2 rounded-lg font-semibold transition-transform duration-300 ${
                         product.quantity === 0
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-pink-500 text-white hover:-translate-y-1"
